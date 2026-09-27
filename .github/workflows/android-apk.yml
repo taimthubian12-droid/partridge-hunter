@@ -27,10 +27,24 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build tools
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-28" "build-tools;28.0.3"
+
       - name: Prepare Godot Android settings
         run: |
           mkdir -p ~/.config/godot
-          printf '%s\n' '[gd_resource type="EditorSettings" format=3]' '' '[resource]' 'export/android/android_sdk_path = "/usr/local/lib/android/sdk"' 'export/android/java_sdk_path = "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64"' > ~/.config/godot/editor_settings-4.tres
+          cat > ~/.config/godot/editor_settings-4.tres <<'EOF'
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "/usr/local/lib/android/sdk"
+          export/android/java_sdk_path = "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.*/x64"
+          EOF
 
       - name: Build Android Legacy APK
         uses: firebelley/godot-export@v7.0.0
@@ -38,18 +52,26 @@ jobs:
           godot_executable_download_url: https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
           godot_export_templates_download_url: https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
           relative_project_path: ./
-          archive_output: true
-          export_preset: "Android Legacy"
+          presets_to_export: "Android Legacy"
           export_debug: "true"
+          verbose: "true"
+          use_preset_export_path: "true"
 
-      - name: Copy APK
-        run: cp /home/runner/.local/share/godot/builds/Android/*.apk ./PartridgeHunter_Legacy.apk
+      - name: Locate APK
+        run: |
+          find . -type f -name "*.apk" -print
+          APK=$(find . -type f -name "*.apk" | head -n 1)
+          test -n "$APK"
+          cp "$APK" ./PartridgeHunter_Legacy.apk
+          ls -lh ./PartridgeHunter_Legacy.apk
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v0.1.1-legacy ./PartridgeHunter_Legacy.apk --title "Partridge Hunter Lite v0.1.1 Legacy" --notes "نسخة اختبار للأجهزة القديمة: Compatibility + ARMv7 + minSdk 23."
+          gh release delete v0.1.1-legacy --yes 2>/dev/null || true
+          git push --delete origin v0.1.1-legacy 2>/dev/null || true
+          gh release create v0.1.1-legacy ./PartridgeHunter_Legacy.apk --title "Partridge Hunter Legacy v0.1.1" --notes "نسخة اختبار للأجهزة القديمة — ARMv7 / Compatibility."
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
