@@ -1,5 +1,8 @@
 name: Build Android APK
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: ["main"]
@@ -35,6 +38,12 @@ jobs:
 
       - name: Copy APK to workspace
         run: cp /home/runner/.local/share/godot/builds/Android/*.apk ./PartridgeHunter_Lite.apk
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.1.0-test ./PartridgeHunter_Lite.apk --title "Partridge Hunter Lite v0.1.0 Test" --notes "نسخة اختبار Android من لعبة Partridge Hunter Lite."
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
