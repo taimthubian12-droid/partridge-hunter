@@ -1,0 +1,19 @@
+[application]
+config/name="Partridge Hunter Lite Legacy"
+run/main_scene="res://main.tscn"
+
+[display]
+window/size/width=720
+window/size/height=1280
+window/size/test_width=360
+window/size/test_height=640
+window/handheld/orientation=1
+
+[rendering]
+quality/driver/driver_name="GLES2"
+quality/2d/use_pixel_snap=false
+environment/defaults/default_clear_color=Color(0.46, 0.68, 0.36, 1)
+
+[application]
+config/name="Partridge Hunter Lite Legacy"
+run/main_scene="res://main.tscn"
