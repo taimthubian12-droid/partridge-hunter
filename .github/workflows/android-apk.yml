@@ -7,7 +7,10 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "legacy/**"
+      - "project.godot"
+      - "main.tscn"
+      - "scripts/**"
+      - "export_presets.cfg"
       - ".github/workflows/android-apk.yml"
   workflow_dispatch:
 
@@ -18,18 +21,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 8
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "8"
+          java-version: "17"
 
-      - name: Build Godot 3.5 Legacy APK
+      - name: Prepare Godot Android settings
+        run: |
+          mkdir -p ~/.config/godot
+          printf '%s\n' '[gd_resource type="EditorSettings" format=3]' '' '[resource]' 'export/android/android_sdk_path = "/usr/local/lib/android/sdk"' 'export/android/java_sdk_path = "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64"' > ~/.config/godot/editor_settings-4.tres
+
+      - name: Build Android Legacy APK
         uses: firebelley/godot-export@v7.0.0
         with:
-          godot_executable_download_url: https://github.com/godotengine/godot-builds/releases/download/3.5.3-stable/Godot_v3.5.3-stable_linux.x86_64.zip
-          godot_export_templates_download_url: https://github.com/godotengine/godot-builds/releases/download/3.5.3-stable/Godot_v3.5.3-stable_export_templates.tpz
-          relative_project_path: legacy/
+          godot_executable_download_url: https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          godot_export_templates_download_url: https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          relative_project_path: ./
           archive_output: true
           export_preset: "Android Legacy"
           export_debug: "true"
@@ -41,7 +49,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v0.1.1-legacy ./PartridgeHunter_Legacy.apk --title "Partridge Hunter Lite v0.1.1 Legacy" --notes "نسخة اختبار للأجهزة القديمة: Godot 3.5 GLES2 + ARMv7."
+          gh release create v0.1.1-legacy ./PartridgeHunter_Legacy.apk --title "Partridge Hunter Lite v0.1.1 Legacy" --notes "نسخة اختبار للأجهزة القديمة: Compatibility + ARMv7 + minSdk 23."
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
