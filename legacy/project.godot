@@ -13,7 +13,3 @@ window/handheld/orientation=1
 quality/driver/driver_name="GLES2"
 quality/2d/use_pixel_snap=false
 environment/defaults/default_clear_color=Color(0.46, 0.68, 0.36, 1)
-
-[application]
-config/name="Partridge Hunter Lite Legacy"
-run/main_scene="res://main.tscn"
