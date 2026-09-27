@@ -35,17 +35,6 @@ jobs:
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-28" "build-tools;28.0.3"
 
-      - name: Prepare Godot Android settings
-        run: |
-          mkdir -p ~/.config/godot
-          cat > ~/.config/godot/editor_settings-4.tres <<'EOF'
-          [gd_resource type="EditorSettings" format=3]
-
-          [resource]
-          export/android/android_sdk_path = "/usr/local/lib/android/sdk"
-          export/android/java_sdk_path = "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.*/x64"
-          EOF
-
       - name: Build Android Legacy APK
         uses: firebelley/godot-export@v7.0.0
         with:
