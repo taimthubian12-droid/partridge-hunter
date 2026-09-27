@@ -14,7 +14,6 @@ text = "PARTRIDGE HUNTER LITE"
 custom_colors/font_color = Color(1, 1, 1, 1)
 custom_constants/outline_size = 4
 custom_colors/font_outline_modulate = Color(0.05, 0.15, 0.08, 1)
-theme_override_font_sizes/font_size = 30
 
 [node name="Info" type="Label" parent="."]
 margin_left = 20.0
@@ -23,7 +22,6 @@ margin_right = 700.0
 margin_bottom = 125.0
 text = "صيد الحجل — نسخة للأجهزة القديمة"
 custom_colors/font_color = Color(0.9, 1, 0.65, 1)
-theme_override_font_sizes/font_size = 22
 
 [node name="Score" type="Label" parent="."]
 margin_left = 500.0
@@ -32,7 +30,6 @@ margin_right = 700.0
 margin_bottom = 55.0
 text = "النقاط: 0"
 custom_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 20
 
 [node name="Ammo" type="Label" parent="."]
 margin_left = 500.0
@@ -41,7 +38,6 @@ margin_right = 700.0
 margin_bottom = 90.0
 text = "الطلقات: 8"
 custom_colors/font_color = Color(1, 0.88, 0.54, 1)
-theme_override_font_sizes/font_size = 20
 
 [node name="Hint" type="Label" parent="."]
 margin_left = 40.0
@@ -50,4 +46,3 @@ margin_right = 680.0
 margin_bottom = 1190.0
 text = "المس الحجل للتصويب وإطلاق النار"
 custom_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 24
