@@ -1,5 +1,5 @@
 [application]
-config/name="Partridge Hunter Lite"
+config/name="Partridge Hunter"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 
@@ -13,3 +13,6 @@ window/size/window_height_override=640
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+
+[network]
+multiplayer/peer="ENetMultiplayerPeer"
