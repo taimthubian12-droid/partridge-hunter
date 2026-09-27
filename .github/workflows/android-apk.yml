@@ -28,12 +28,9 @@ jobs:
           java-version: "17"
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android build tools
-        run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-28" "build-tools;28.0.3"
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-28 build-tools;28.0.3"
 
       - name: Build Android Legacy APK
         uses: firebelley/godot-export@v7.0.0
