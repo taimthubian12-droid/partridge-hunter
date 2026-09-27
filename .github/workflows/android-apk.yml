@@ -8,19 +8,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.3.1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build APK
-        run: |
-          mkdir -p build
-          godot --headless --path . --export-debug "Android" build/PartridgeHunter_Lite.apk
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - name: Build Android APK with Godot
+        uses: firebelley/godot-export@v6.1.0
         with:
-          name: PartridgeHunter-Lite-APK
-          path: build/PartridgeHunter_Lite.apk
+          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          relative_project_path: ./
+          archive_output: true
+          export_preset: Android
