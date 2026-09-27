@@ -33,17 +33,17 @@ jobs:
           godot_export_templates_download_url: https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
           relative_project_path: ./
           archive_output: true
-          export_preset: Android
+          export_preset: "Android Legacy"
           export_debug: "true"
 
       - name: Copy APK to workspace
-        run: cp /home/runner/.local/share/godot/builds/Android/*.apk ./PartridgeHunter_Lite.apk
+        run: cp /home/runner/.local/share/godot/builds/Android/*.apk ./PartridgeHunter_Legacy.apk
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v0.1.0-test ./PartridgeHunter_Lite.apk --title "Partridge Hunter Lite v0.1.0 Test" --notes "نسخة اختبار Android من لعبة Partridge Hunter Lite."
+          gh release create v0.1.1-legacy ./PartridgeHunter_Legacy.apk --title "Partridge Hunter Lite v0.1.1 Legacy" --notes "نسخة اختبار مخصصة للأجهزة Android القديمة: ARMv7 + Compatibility + minSdk 23."
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
