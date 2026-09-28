@@ -705,6 +705,17 @@ func _unhandled_input(event):
     queue_redraw()
     return
 
+if kennel_open:
+    if p.x >= 20 and p.x <= 700 and p.y >= 320 and p.y < 770:
+        var idx = int((p.y - 320) / 82.0)
+        if idx >= 0 and idx < 5:
+            _buy_or_select_dog(idx)
+        return
+    if p.y >= 770:
+        kennel_open = false
+        queue_redraw()
+    return
+
 if p.y >= 805 and p.y < 850 and p.x < 500:
     _start_dog_search()
     return
@@ -826,6 +837,20 @@ func _draw():
         draw_string(ThemeDB.fallback_font, Vector2(190, 990), "%.2f" % _dog_stat("speed"), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
         draw_string(ThemeDB.fallback_font, Vector2(350, 990), "%d%%" % int(_dog_stat("accuracy") * 100.0), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
         draw_string(ThemeDB.fallback_font, Vector2(515, 990), "%.2f" % _dog_stat("stamina"), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
+    if kennel_open:
+        draw_rect(Rect2(15, 250, 690, 560), Color(0.04, 0.07, 0.10, 0.98))
+        draw_string(ThemeDB.fallback_font, Vector2(35, 285), "حظيرة البونتر", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(35, 315), "الرصيد: %d عملة" % dog_coins, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#fde68a"))
+        for i in range(5):
+            var y = 345.0 + i * 82.0
+            var state = "مملوك" if owned_dogs[i] else "فتح بـ %d" % dog_unlock_costs[i]
+            var active = " *" if dog_variant == i + 1 else ""
+            draw_rect(Rect2(30, y - 25, 650, 65), Color("#17324d") if dog_variant == i + 1 else Color("#12202c"))
+            draw_string(ThemeDB.fallback_font, Vector2(45, y), "%d. %s%s" % [i + 1, dog_variant_names[i], active], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+            draw_string(ThemeDB.fallback_font, Vector2(500, y), state, HORIZONTAL_ALIGNMENT_LEFT, 160, 15, Color("#c7f9cc"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 785), "اضغط على كلب لاختياره أو فتحه", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
+        return
+
     # Simple in-engine Pointer silhouette so the game does not depend on external image files.
     var dog_pos = Vector2(570, 835)
     draw_circle(dog_pos + Vector2(-18, 0), 14, Color("#f4f1e8"))
