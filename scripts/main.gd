@@ -508,12 +508,25 @@ func _add_hunter_xp(amount: int):
         status_text = "🏅 ترقية! رتبة %s | +%d عملة" % [_hunter_rank_for_level(hunter_level), level_reward]
     hunter_rank = _hunter_rank_for_level(hunter_level)
 
+func _check_hunter_achievements():
+    var targets = [1, 10, 50, 0]
+    var unlocked = [total_hits >= 1, total_hits >= 10, total_hits >= 50, hunter_level >= 10]
+    var rewards = [50, 150, 400, 1000]
+    for i in range(4):
+        if unlocked[i] and not hunter_achievements[i]:
+            hunter_achievements[i] = true
+            dog_coins += rewards[i]
+            total_coins_earned += rewards[i]
+            status_text = "إنجاز جديد! +%d عملة" % rewards[i]
+    _save_dog_profiles()
+
 func _record_hunt_stats(hit: bool):
     total_hunts += 1
     if hit:
         total_hits += 1
         best_streak = maxi(best_streak, streak)
         _add_hunter_xp(20 + mission_level * 5)
+        _check_hunter_achievements()
     else:
         _add_hunter_xp(5)
     _save_dog_profiles()
