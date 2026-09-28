@@ -1025,6 +1025,36 @@ func _fire_at(point: Vector2):
         _show_hunt_feedback("💨 لم تصب — حاول مرة أخرى", false)
     queue_redraw()
 
+func _prey_behavior_multiplier() -> float:
+    if prey_species == "السمان":
+        return 1.35
+    if prey_species == "الحمام البري":
+        return 1.5
+    if prey_species == "الدراج":
+        return 0.9
+    if prey_species == "الأرنب البري":
+        return 1.2
+    if prey_species == "الذئب":
+        return 1.05
+    if prey_species == "الضبع":
+        return 0.95
+    return 1.0
+
+func _prey_behavior_turn() -> float:
+    if prey_species == "السمان":
+        return 1.4
+    if prey_species == "الحمام البري":
+        return 1.7
+    if prey_species == "الدراج":
+        return 0.75
+    if prey_species == "الأرنب البري":
+        return 1.1
+    if prey_species == "الذئب":
+        return 1.25
+    if prey_species == "الضبع":
+        return 0.85
+    return 1.0
+
 func _update_danger_behavior(delta):
     if prey_danger_level <= 0 or not prey_revealed:
         danger_alert_timer = maxf(0.0, danger_alert_timer - delta)
@@ -1032,7 +1062,7 @@ func _update_danger_behavior(delta):
     danger_alert_timer = maxf(0.0, danger_alert_timer - delta)
     prey_last_turn -= delta
     if prey_last_turn <= 0.0:
-        var turn_amount = rng.randf_range(-0.9, 0.9)
+        var turn_amount = rng.randf_range(-0.9, 0.9) * _prey_behavior_turn()
         if prey_species == "الذئب":
             turn_amount *= 1.25
         else:
