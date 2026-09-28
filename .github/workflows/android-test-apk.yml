@@ -24,7 +24,7 @@ jobs:
         run: |
           mkdir -p build
           godot --headless --editor --quit-after 2
-          godot --headless --path . --export-release "Android Test APK" build/rahlet_sayd_test.apk
+          godot --headless --path . --export-debug "Android Test APK" build/rahlet_sayd_test.apk
       - name: Verify test APK
         run: test -s build/rahlet_sayd_test.apk
       - name: Upload test APK
