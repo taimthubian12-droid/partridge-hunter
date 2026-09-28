@@ -1082,6 +1082,24 @@ func _draw():
         draw_string(ThemeDB.fallback_font, Vector2(35, 1085), "المحافظة ← المنطقة ← القرية", HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fff0a8"))
         return
 
+    if hunter_profile_open:
+        draw_rect(Rect2(0, 0, 720, 1280), Color("#10251a"))
+        draw_rect(Rect2(25, 25, 670, 700), Color("#173f2b"))
+        draw_string(ThemeDB.fallback_font, Vector2(50, 75), "ملف الصياد", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(50, 125), "الاسم: %s" % hunter_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 21, Color("#d9f99d"))
+        draw_string(ThemeDB.fallback_font, Vector2(50, 170), "الرتبة: %s | المستوى: %d" % [hunter_rank, hunter_level], HORIZONTAL_ALIGNMENT_LEFT, -1, 21, Color("#fde68a"))
+        draw_string(ThemeDB.fallback_font, Vector2(50, 215), "XP: %d / %d" % [hunter_xp, hunter_xp_next], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#bfdbfe"))
+        draw_string(ThemeDB.fallback_font, Vector2(50, 260), "إجمالي الصيد: %d" % total_hunts, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(50, 300), "الإصابات: %d | أفضل سلسلة: %d" % [total_hits, best_streak], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(50, 340), "العملات المكتسبة: %d" % total_coins_earned, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#c7f9cc"))
+        draw_string(ThemeDB.fallback_font, Vector2(50, 390), "الإنجازات", HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color("#ffe08a"))
+        var names = ["أول إصابة", "10 إصابات", "50 إصابة", "المستوى 10"]
+        for i in range(4):
+            var state = "مكتمل" if hunter_achievements[i] else "مغلق"
+            draw_string(ThemeDB.fallback_font, Vector2(55, 430 + i * 45), "%s: %s" % [names[i], state], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fef3c7"))
+        draw_string(ThemeDB.fallback_font, Vector2(50, 660), "اضغط أعلى الشاشة للعودة", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#dbeafe"))
+        return
+
     draw_rect(Rect2(0, 0, 720, 1280), Color("#76ad5d"))
     draw_rect(Rect2(0, 0, 720, 175), Color("#79b7d9"))
     draw_rect(Rect2(0, 0, 720, 110), Color("#173f2b"))
