@@ -60,6 +60,9 @@ var prey_reward_multiplier := 1.0
 var prey_revealed := true
 var track_progress := 0.0
 var track_type := "آثار أقدام"
+var track_quality := 0.75
+var track_direction := Vector2.RIGHT
+var track_clues_found := 0
 var prey_danger_level := 0
 const PREY_TYPES := ["الحجل", "الأرنب البري", "السمان", "الحمام البري", "الدراج", "الذئب", "الضبع"]
 var partridge_velocity := Vector2(0.0, 0.0)
@@ -714,6 +717,19 @@ func _upgrade_dog(stat_name: String):
     status_text = "تم تطوير %s" % stat_name
     queue_redraw()
 
+func _inspect_track():
+    if prey_revealed:
+        status_text = "الطريدة مكشوفة بالفعل"
+        return
+    var chance = clampf(track_quality + _dog_stat("scent") * 0.08, 0.15, 0.98)
+    if rng.randf() <= chance:
+        track_clues_found += 1
+        track_quality = clampf(track_quality + 0.08, 0.25, 1.0)
+        status_text = "وجدت أثراً — اتبع المسار"
+    else:
+        status_text = "الأثر ضعيف — جرّب البحث مرة أخرى"
+    queue_redraw()
+
 func _start_dog_search():
     if dog_searching:
 
@@ -735,7 +751,7 @@ func _update_dog_search(delta):
     if dog_search_progress >= required:
         dog_searching = false
         var roll = rng.randf()
-        if roll <= _dog_stat("accuracy"):
+        if roll <= clampf(_dog_stat("accuracy") + track_clues_found * 0.04, 0.0, 0.99):
             dog_has_found_prey = true
             prey_revealed = true
             _add_dog_xp(35)
@@ -763,6 +779,9 @@ func _choose_prey():
     prey_danger_level = 2 if prey_species == "الذئب" else (3 if prey_species == "الضبع" else 0)
     prey_revealed = prey_danger_level == 0
     track_type = "آثار أقدام" if prey_species in ["الأرنب البري", "الذئب", "الضبع"] else "ريش وآثار حركة"
+    track_quality = clampf(0.9 - wind_speed / 25.0 - (0.15 if weather == "ضباب" else 0.0), 0.25, 0.95)
+    track_direction = Vector2.from_angle(rng.randf_range(-PI, PI))
+    track_clues_found = 0
     prey_radius = {"الحجل":48.0,"الأرنب البري":42.0,"السمان":34.0,"الحمام البري":30.0,"الدراج":52.0,"الذئب":58.0,"الضبع":62.0}.get(prey_species, 44.0)
     prey_reward_multiplier = {"الحجل":1.0,"الأرنب البري":1.15,"السمان":1.25,"الحمام البري":1.35,"الدراج":1.60,"الذئب":2.10,"الضبع":2.40}.get(prey_species, 1.0)
 
