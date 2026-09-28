@@ -114,6 +114,8 @@ func select_governorate(name: String):
     var villages = _villages()
     selected_village = villages[0] if villages.size() > 0 else ""
     _update_world_conditions()
+    weather_updated_at = ""
+    _request_live_weather()
     status_text = "منطقة الصيد: %s / %s / %s" % [selected_governorate, selected_area, selected_village]
     queue_redraw()
 
@@ -124,6 +126,8 @@ func select_area(name: String):
     var villages = _villages()
     selected_village = villages[0] if villages.size() > 0 else ""
     _update_world_conditions()
+    weather_updated_at = ""
+    _request_live_weather()
     queue_redraw()
 
 func select_village(name: String):
@@ -131,6 +135,8 @@ func select_village(name: String):
         return
     selected_village = name
     _update_world_conditions()
+    weather_updated_at = ""
+    _request_live_weather()
     queue_redraw()
 
 func _request_live_weather():
@@ -400,7 +406,8 @@ func _process(delta):
     if weather_refresh_timer >= weather_refresh_seconds:
         weather_refresh_timer = 0.0
         _request_live_weather()
-    _update_world_conditions()
+    if not live_weather_enabled or weather_updated_at.is_empty():
+        _update_world_conditions()
     queue_redraw()
 
 func _unhandled_input(event):
