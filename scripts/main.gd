@@ -973,6 +973,7 @@ func _draw():
         draw_string(ThemeDB.fallback_font, Vector2(275, 947), "🐕 الحظيرة", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
         var reward_state = "متاح +%d" % daily_reward_amount if daily_reward_claimed_date != _today_key() else "تم الاستلام"
         draw_string(ThemeDB.fallback_font, Vector2(500, 947), "🎁 اليومية: " + reward_state, HORIZONTAL_ALIGNMENT_LEFT, 195, 15, Color("#fde68a"))
+        draw_string(ThemeDB.fallback_font, Vector2(500, 980), "📦 الصندوق: %d | آخر مكافأة: %d" % [reward_chest_count, last_hunt_reward], HORIZONTAL_ALIGNMENT_LEFT, 195, 14, Color("#c7f9cc"))
     if dog_upgrade_open:
         draw_rect(Rect2(20, 890, 680, 190), Color(0.05, 0.08, 0.12, 0.96))
         draw_string(ThemeDB.fallback_font, Vector2(35, 920), "تطوير البونتر — نقطة لكل تطوير", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#ffffff"))
