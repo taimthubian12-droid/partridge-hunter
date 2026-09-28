@@ -417,6 +417,8 @@ func _load_dog_profiles():
     total_hits = maxi(0, int(cfg.get_value("hunter", "total_hits", 0)))
     best_streak = maxi(0, int(cfg.get_value("hunter", "best_streak", 0)))
     hunter_rank = str(cfg.get_value("hunter", "rank", "مبتدئ"))
+    hunter_achievements = cfg.get_value("hunter", "achievements", hunter_achievements)
+    if hunter_achievements.size() != 4: hunter_achievements = [false, false, false, false]
     _refresh_missions()
     _sync_active_profile()
 
