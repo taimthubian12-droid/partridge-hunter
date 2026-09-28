@@ -963,21 +963,21 @@ func _unhandled_input(event):
     var p = event.position
 
     if start_menu_open:
-        if p.y >= 560 and p.y < 650:
+        if p.x >= 45 and p.x < 240 and p.y >= 465 and p.y < 520:
             _open_location_menu(0)
             return
-        if p.y >= 665 and p.y < 735:
+        if p.x >= 260 and p.x < 455 and p.y >= 465 and p.y < 520:
             hunter_profile_open = true
             start_menu_open = false
             queue_redraw()
             return
-        if p.y >= 755 and p.y < 830:
+        if p.y >= 640 and p.y < 715:
             _set_hunting_mode(0)
             return
-        if p.y >= 840 and p.y < 915:
+        if p.y >= 730 and p.y < 805:
             _set_hunting_mode(1)
             return
-        if p.y >= 925 and p.y < 1000:
+        if p.y >= 820 and p.y < 895:
             _set_hunting_mode(2)
             return
         return
