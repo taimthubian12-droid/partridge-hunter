@@ -65,6 +65,7 @@ var track_direction := Vector2.RIGHT
 var track_clues_found := 0
 var danger_alert_timer := 0.0
 var prey_last_turn := 0.0
+var prey_evasion_timer := 0.0
 var prey_danger_level := 0
 const PREY_TYPES := ["الحجل", "الأرنب البري", "السمان", "الحمام البري", "الدراج", "الذئب", "الضبع"]
 var partridge_velocity := Vector2(0.0, 0.0)
@@ -1054,6 +1055,30 @@ func _prey_behavior_turn() -> float:
     if prey_species == "الضبع":
         return 0.85
     return 1.0
+
+func _update_revealed_prey_behavior(delta):
+    if not prey_revealed or dog_searching:
+        return
+    prey_evasion_timer -= delta
+    if prey_evasion_timer > 0.0:
+        return
+    var escape_factor = 1.0
+    if prey_species == "السمان":
+        escape_factor = 1.45
+    elif prey_species == "الحمام البري":
+        escape_factor = 1.65
+    elif prey_species == "الأرنب البري":
+        escape_factor = 1.25
+    elif prey_species == "الدراج":
+        escape_factor = 0.85
+    elif prey_species == "الذئب":
+        escape_factor = 1.10
+    elif prey_species == "الضبع":
+        escape_factor = 0.95
+    var burst = rng.randf_range(0.75, 1.25) * escape_factor
+    partridge_velocity = partridge_velocity.rotated(rng.randf_range(-0.55, 0.55))
+    partridge_velocity *= burst
+    prey_evasion_timer = rng.randf_range(0.9, 1.7)
 
 func _update_danger_behavior(delta):
     if prey_danger_level <= 0 or not prey_revealed:
