@@ -481,7 +481,7 @@ func _unhandled_input(event):
             return
         if p.y >= 125 and p.y < 965:
             var options = _location_options()
-            var index = int((p.y - 125) / 70.0)
+            var index = int((p.y - 125) / 60.0)
             if index >= 0 and index < options.size():
                 var chosen = str(options[index])
                 if location_level == 0:
@@ -509,18 +509,8 @@ func _unhandled_input(event):
     if p.y >= 638 and p.y < 665:
         _open_location_menu(1)
         return
-        var areas = _areas()
-        if areas.size() > 0:
-            var ai = areas.find(selected_area)
-            select_area(areas[(ai + 1) % areas.size()])
-        return
     if p.y >= 665 and p.y < 690:
         _open_location_menu(2)
-        return
-        var villages = _villages()
-        if villages.size() > 0:
-            var vi = villages.find(selected_village)
-            select_village(villages[(vi + 1) % villages.size()])
         return
 
     # Name area.
@@ -564,9 +554,9 @@ func _draw():
         draw_string(ThemeDB.fallback_font, Vector2(635, 70), "×", HORIZONTAL_ALIGNMENT_LEFT, -1, 35, Color("#ffe08a"))
         var options = _location_options()
         for i in range(options.size()):
-            if i >= 12:
+            if i >= 14:
                 break
-            var yy = 125 + i * 70
+            var yy = 125 + i * 60
             draw_rect(Rect2(25, yy, 670, 58), Color("#294f32"))
             draw_string(ThemeDB.fallback_font, Vector2(45, yy + 38), str(options[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
         draw_string(ThemeDB.fallback_font, Vector2(35, 1040), "رجوع", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#d9f99d"))
