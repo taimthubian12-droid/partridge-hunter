@@ -114,6 +114,11 @@ var total_hits := 0
 var best_streak := 0
 var hunter_rank := "مبتدئ"
 var hunter_profile_open := false
+var finance_open := false
+var finance_ledger: Array = []
+var finance_total_spent := 0
+var finance_total_earned := 0
+var finance_purchase_count := 0
 var hunter_achievements := [false, false, false, false]
 var start_menu_open := true
 var hunting_mode := 0
@@ -388,11 +393,70 @@ func _store_active_profile():
     p["stats"] = dog_stats.duplicate()
     dog_profiles[dog_variant - 1] = p
 
+func _record_finance(kind: String, amount: int, label: String):
+    if amount == 0:
+        return
+    finance_ledger.push_front({"kind": kind, "amount": amount, "label": label, "time": Time.get_datetime_string_from_system(false, true)})
+    if finance_ledger.size() > 50:
+        finance_ledger.resize(50)
+    if kind == "credit":
+        finance_total_earned += amount
+    elif kind == "debit":
+        finance_total_spent += amount
+        finance_purchase_count += 1
+
+func _credit_coins(amount: int, label: String):
+    if amount > 0:
+        dog_coins += amount
+        total_coins_earned += amount
+        _record_finance("credit", amount, label)
+
+func _debit_coins(amount: int, label: String) -> bool:
+    if amount <= 0:
+        return true
+    if dog_coins < amount:
+        return false
+    dog_coins -= amount
+    _record_finance("debit", amount, label)
+    return true
+
+func _open_finance():
+    finance_open = true
+    start_menu_open = false
+    hunter_profile_open = false
+    queue_redraw()
+
+func _draw_finance_panel():
+    draw_rect(Rect2(0, 0, 720, 1280), Color("#0b1d14"))
+    draw_rect(Rect2(20, 25, 680, 1130), Color("#173f2b"))
+    draw_string(ThemeDB.fallback_font, Vector2(45, 85), "💰 الحساب المالي", HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color.WHITE)
+    draw_string(ThemeDB.fallback_font, Vector2(45, 125), "محفظة اللعبة وسجل العمليات — عملة داخل اللعبة", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#d9f99d"))
+    draw_rect(Rect2(45, 155, 610, 82), Color("#294f32"))
+    draw_string(ThemeDB.fallback_font, Vector2(70, 192), "الرصيد الحالي: %d عملة" % dog_coins, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color("#fde68a"))
+    draw_string(ThemeDB.fallback_font, Vector2(360, 192), "المكتسب: %d" % finance_total_earned, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#c7f9cc"))
+    draw_string(ThemeDB.fallback_font, Vector2(70, 225), "المصروف: %d   |   المشتريات: %d" % [finance_total_spent, finance_purchase_count], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#fecaca"))
+    draw_string(ThemeDB.fallback_font, Vector2(45, 280), "آخر العمليات", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
+    var shown = mini(finance_ledger.size(), 9)
+    for i in range(shown):
+        var e = finance_ledger[i]
+        var sign = "+" if str(e.get("kind", "credit")) == "credit" else "-"
+        var tint = Color("#bbf7d0") if sign == "+" else Color("#fecaca")
+        draw_string(ThemeDB.fallback_font, Vector2(55, 320 + i * 62), "%s%d  %s" % [sign, int(e.get("amount", 0)), str(e.get("label", "عملية"))], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, tint)
+        draw_string(ThemeDB.fallback_font, Vector2(55, 342 + i * 62), str(e.get("time", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#bfdbfe"))
+    draw_rect(Rect2(45, 1000, 610, 58), Color("#315d39"))
+    draw_string(ThemeDB.fallback_font, Vector2(300, 1037), "رجوع", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+    draw_string(ThemeDB.fallback_font, Vector2(45, 1100), "الرصيد هنا افتراضي داخل اللعبة؛ الدفع الحقيقي سيُربط", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#cbd5e1"))
+    draw_string(ThemeDB.fallback_font, Vector2(45, 1123), "بنظام Google Play Billing قبل بيع العملات الرقمية.", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#cbd5e1"))
+
 func _save_dog_profiles():
     _store_active_profile()
     var cfg = ConfigFile.new()
     cfg.set_value("kennel", "owned", owned_dogs)
     cfg.set_value("kennel", "coins", dog_coins)
+    cfg.set_value("finance", "ledger", finance_ledger)
+    cfg.set_value("finance", "total_spent", finance_total_spent)
+    cfg.set_value("finance", "total_earned", finance_total_earned)
+    cfg.set_value("finance", "purchase_count", finance_purchase_count)
     cfg.set_value("kennel", "profiles", dog_profiles)
     cfg.set_value("kennel", "active", dog_variant)
     cfg.set_value("shop", "owned_items", owned_items)
@@ -422,6 +486,12 @@ func _load_dog_profiles():
         return
     owned_dogs = cfg.get_value("kennel", "owned", owned_dogs)
     dog_coins = int(cfg.get_value("kennel", "coins", dog_coins))
+    finance_ledger = cfg.get_value("finance", "ledger", finance_ledger)
+    if finance_ledger is not Array:
+        finance_ledger = []
+    finance_total_spent = int(cfg.get_value("finance", "total_spent", finance_total_spent))
+    finance_total_earned = int(cfg.get_value("finance", "total_earned", finance_total_earned))
+    finance_purchase_count = int(cfg.get_value("finance", "purchase_count", finance_purchase_count))
     var saved = cfg.get_value("kennel", "profiles", dog_profiles)
     if saved is Array and saved.size() == DOG_STATS.size():
         dog_profiles = saved
@@ -683,7 +753,7 @@ func _claim_daily_reward():
     if daily_reward_claimed_date == today:
         status_text = "تم استلام مكافأة اليوم مسبقاً"
         return
-    dog_coins += daily_reward_amount
+    _credit_coins(daily_reward_amount, "المكافأة اليومية")
     daily_reward_claimed_date = today
     _save_dog_profiles()
     status_text = "🎁 استلمت المكافأة اليومية: +%d عملة" % daily_reward_amount
@@ -1020,7 +1090,7 @@ func _fire_at(point: Vector2):
         _record_hunt_stats(true)
         if mission_progress >= mission_target:
             score += mission_reward
-            dog_coins += int(mission_reward / 10)
+            _credit_coins(int(mission_reward / 10), "إكمال مرحلة")
             status_text = "اكتملت المرحلة! +%d نقطة و+%d عملة" % [mission_reward, int(mission_reward / 10)]
             _save_dog_profiles()
             _advance_mission()
@@ -1177,7 +1247,7 @@ func _unhandled_input(event):
             start_menu_open = false
             queue_redraw()
             return
-        if p.y >= 640 and p.y < 715:
+        if p.x >= 475 and p.y >= 465 and p.y < 520:\n            _open_finance()\n            return\n        if p.y >= 640 and p.y < 715:
             _set_hunting_mode(0)
             return
         if p.y >= 730 and p.y < 805:
@@ -1206,7 +1276,7 @@ func _unhandled_input(event):
         draw_rect(Rect2(475, 465, 180, 48), Color("#315d39"))
         draw_string(ThemeDB.fallback_font, Vector2(65, 497), "📍 تغيير الموقع", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
         draw_string(ThemeDB.fallback_font, Vector2(280, 497), "🏅 ملف الصياد", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
-        draw_string(ThemeDB.fallback_font, Vector2(495, 497), "نمط: " + hunting_mode_names[hunting_mode], HORIZONTAL_ALIGNMENT_LEFT, 160, 14, Color("#fde68a"))
+        draw_string(ThemeDB.fallback_font, Vector2(495, 497), "💰 الحساب المالي", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
         draw_string(ThemeDB.fallback_font, Vector2(45, 615), "اختر نمط الصيد", HORIZONTAL_ALIGNMENT_LEFT, -1, 25, Color.WHITE)
         draw_rect(Rect2(45, 640, 610, 75), Color("#294f32"))
         draw_rect(Rect2(45, 730, 610, 75), Color("#315d39"))
@@ -1217,6 +1287,13 @@ func _unhandled_input(event):
         draw_string(ThemeDB.fallback_font, Vector2(70, 867), "🔥 تحدي السلسلة — 5 طلقات ومكافآت ×1.60", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fff0a8"))
         draw_string(ThemeDB.fallback_font, Vector2(45, 1035), "الحالة: " + status_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#dbeafe"))
         draw_string(ThemeDB.fallback_font, Vector2(45, 1080), "اضغط على أحد الأنماط لبدء الصيد", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#d9f99d"))
+        return
+
+    if finance_open:
+        if p.y >= 990 and p.y < 1070:
+            finance_open = false
+            start_menu_open = true
+            queue_redraw()
         return
 
     if hunter_profile_open:
@@ -1410,6 +1487,10 @@ func _draw():
             draw_string(ThemeDB.fallback_font, Vector2(45, yy + 38), str(options[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
         draw_string(ThemeDB.fallback_font, Vector2(35, 1040), "رجوع", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#d9f99d"))
         draw_string(ThemeDB.fallback_font, Vector2(35, 1085), "المحافظة ← المنطقة ← القرية", HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fff0a8"))
+        return
+
+    if finance_open:
+        _draw_finance_panel()
         return
 
     if hunter_profile_open:
