@@ -21,6 +21,34 @@ var dog_has_found_prey := false
 var rng := RandomNumberGenerator.new()
 var shell_sizes = [12, 16, 20]
 
+# Syrian hunting map: governorate -> area -> village. Names are gameplay locations,
+# not claims that hunting is legally permitted there. The game treats these as fictionalized
+# hunting zones and uses time/weather to change spawn difficulty.
+const SYRIA_HUNTING_ZONES := {
+    "دمشق": {"الغوطة": ["دوما", "حرستا", "كفربطنا"]},
+    "ريف دمشق": {"القلمون": ["يبرود", "النبك", "دير عطية"], "الزبداني": ["الزبداني", "بلودان", "مضايا"]},
+    "حمص": {"تدمر": ["تدمر", "القريتين", "مهين"], "الريف الغربي": ["تلدو", "الحواش", "مرمريتا"]},
+    "حماة": {"مصياف": ["مصياف", "وادي العيون", "عين حلاقيم"], "الغاب": ["السقيلبية", "قلعة المضيق", "محردة"]},
+    "اللاذقية": {"جبلة": ["جبلة", "بيت ياشوط", "قرفيص"], "الحفة": ["الحفة", "صلنفة", "سلمى"]},
+    "طرطوس": {"صافيتا": ["صافيتا", "مشتى الحلو", "الدريكيش"], "بانياس": ["بانياس", "القدموس", "حمام القراحلة"]},
+    "حلب": {"عفرين": ["عفرين", "راجو", "جنديرس"], "الريف الشمالي": ["اعزاز", "مارع", "تل رفعت"]},
+    "إدلب": {"جسر الشغور": ["جسر الشغور", "بداما", "دركوش"], "معرة النعمان": ["معرة النعمان", "كفرنبل", "حزارين"]},
+    "الرقة": {"تل أبيض": ["تل أبيض", "سلوك", "عين عيسى"], "الطبقة": ["الطبقة", "المنصورة", "الجرنية"]},
+    "دير الزور": {"الميادين": ["الميادين", "ذيبان", "العشارة"], "البوكمال": ["البوكمال", "السوسة", "هجين"]},
+    "الحسكة": {"القامشلي": ["القامشلي", "عامودا", "الدرباسية"], "المالكية": ["المالكية", "رميلان", "معبدة"]},
+    "درعا": {"الريف الغربي": ["طفس", "جاسم", "نوى"], "الريف الشرقي": ["بصرى الشام", "الحراك", "المسيفرة"]},
+    "القنيطرة": {"ريف القنيطرة": ["خان أرنبة", "جباتا الخشب", "مسعدة"]},
+    "السويداء": {"جبل العرب": ["شهبا", "صلخد", "القريا"]}
+}
+
+var selected_governorate := "ريف دمشق"
+var selected_area := "القلمون"
+var selected_village := "يبرود"
+var game_hour := 6.0
+var weather := "صحو"
+var wind_speed := 3.0
+var temperature := 20.0
+
 var peer: ENetMultiplayerPeer
 var connected := false
 var is_host := false
@@ -31,6 +59,7 @@ var editing_name := false
 
 func _ready():
     rng.randomize()
+    _update_world_conditions()
     target = _new_target()
     multiplayer.peer_connected.connect(_on_peer_connected)
     multiplayer.peer_disconnected.connect(_on_peer_disconnected)
@@ -39,6 +68,64 @@ func _ready():
     multiplayer.server_disconnected.connect(_on_server_disconnected)
     players[multiplayer.get_unique_id()] = {"name": hunter_name, "score": score}
     queue_redraw()
+
+
+func _governorates() -> Array:
+    return SYRIA_HUNTING_ZONES.keys()
+
+func _areas() -> Array:
+    return SYRIA_HUNTING_ZONES.get(selected_governorate, {}).keys()
+
+func _villages() -> Array:
+    return SYRIA_HUNTING_ZONES.get(selected_governorate, {}).get(selected_area, [])
+
+func select_governorate(name: String):
+    if not SYRIA_HUNTING_ZONES.has(name):
+        return
+    selected_governorate = name
+    var areas = _areas()
+    selected_area = areas[0] if areas.size() > 0 else ""
+    var villages = _villages()
+    selected_village = villages[0] if villages.size() > 0 else ""
+    _update_world_conditions()
+    status_text = "منطقة الصيد: %s / %s / %s" % [selected_governorate, selected_area, selected_village]
+    queue_redraw()
+
+func select_area(name: String):
+    if not _areas().has(name):
+        return
+    selected_area = name
+    var villages = _villages()
+    selected_village = villages[0] if villages.size() > 0 else ""
+    _update_world_conditions()
+    queue_redraw()
+
+func select_village(name: String):
+    if not _villages().has(name):
+        return
+    selected_village = name
+    _update_world_conditions()
+    queue_redraw()
+
+func _update_world_conditions():
+    # In-game clock follows a 24h cycle; later this can be fed by a live weather service.
+    game_hour = fmod(Time.get_time_dict_from_system().hour + Time.get_time_dict_from_system().minute / 60.0, 24.0)
+    var seasonal_seed = Time.get_date_dict_from_system().month
+    var zone_factor = float(selected_governorate.length() + selected_area.length() + selected_village.length())
+    temperature = 10.0 + (sin((float(seasonal_seed) / 12.0) * TAU - PI / 2.0) + 1.0) * 10.0 + fmod(zone_factor, 7.0)
+    wind_speed = 1.5 + fmod(zone_factor * 0.7, 7.0)
+    if int(zone_factor) % 9 == 0:
+        weather = "غائم"
+    elif int(zone_factor) % 13 == 0:
+        weather = "ضباب خفيف"
+    elif int(zone_factor) % 17 == 0:
+        weather = "مطر خفيف"
+    else:
+        weather = "صحو"
+
+func _hunting_condition_text() -> String:
+    var period = "فجر" if game_hour < 7.0 else ("صباح" if game_hour < 12.0 else ("بعد الظهر" if game_hour < 17.0 else ("غروب" if game_hour < 20.0 else "ليل")))
+    return "%s | %s | %s°C | رياح %.1f م/ث" % [period, weather, temperature, wind_speed]
 
 func _new_target() -> Vector2:
     return Vector2(rng.randf_range(80, 640), rng.randf_range(300, 980))
@@ -213,6 +300,13 @@ func _unhandled_input(event):
 
     var p = event.position
 
+    # Hunting location area: tap the location line to cycle governorate/area/village.
+    if p.y >= 610 and p.y < 690:
+        var gs = _governorates()
+        var gi = gs.find(selected_governorate)
+        select_governorate(gs[(gi + 1) % gs.size()])
+        return
+
     # Name area.
     if p.y >= 185 and p.y < 245:
         editing_name = true
@@ -257,6 +351,9 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(500, 80), "الطلقات: " + str(ammo), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#ffe08a"))
     var accuracy := 0.0 if shots_fired == 0 else (float(hits) / float(shots_fired)) * 100.0
     draw_string(ThemeDB.fallback_font, Vector2(25, 575), "الدقة: %d%%   السلسلة: %d   أفضل سلسلة: %d" % [roundi(accuracy), streak, best_streak], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fff0a8"))
+    draw_rect(Rect2(20, 610, 680, 78), Color("#315d39"))
+    draw_string(ThemeDB.fallback_font, Vector2(35, 635), "منطقة الصيد: %s / %s / %s" % [selected_governorate, selected_area, selected_village], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+    draw_string(ThemeDB.fallback_font, Vector2(35, 665), "الوقت والطقس: " + _hunting_condition_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fff0a8"))
 
     draw_rect(Rect2(20, 185, 680, 55), Color("#294f32"))
     draw_string(ThemeDB.fallback_font, Vector2(35, 221), "اسم الصياد: " + hunter_name + ("  [تعديل]" if editing_name else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
