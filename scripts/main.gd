@@ -534,7 +534,8 @@ func _buy_or_select_dog(index: int):
         return
     var cost = dog_unlock_costs[index]
     if dog_coins >= cost:
-        dog_coins -= cost
+        if not _debit_coins(cost, "شراء كلب"):
+            return
         owned_dogs[index] = true
         dog_variant = index + 1
         _sync_active_profile()
@@ -565,7 +566,8 @@ func _buy_shop_item(index: int):
     if dog_coins < cost:
         status_text = "رصيدك غير كافٍ"
         return
-    dog_coins -= cost
+    if not _debit_coins(cost, "شراء معدات"):
+        return
     owned_items[index] = true
     equipped_items[index] = true
     _apply_equipped_item_bonus(index, true)
@@ -602,8 +604,7 @@ func _add_hunter_xp(amount: int):
         hunter_level += 1
         hunter_xp_next = 100 + (hunter_level - 1) * 50
         var level_reward = 150 + hunter_level * 25
-        dog_coins += level_reward
-        total_coins_earned += level_reward
+        _credit_coins(level_reward, "مكافأة ترقية الصياد")
         status_text = "🏅 ترقية! رتبة %s | +%d عملة" % [_hunter_rank_for_level(hunter_level), level_reward]
     hunter_rank = _hunter_rank_for_level(hunter_level)
 
