@@ -94,6 +94,8 @@ var total_hunts := 0
 var total_hits := 0
 var best_streak := 0
 var hunter_rank := "مبتدئ"
+var hunter_profile_open := false
+var hunter_achievements := [false, false, false, false]
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
@@ -381,6 +383,7 @@ func _save_dog_profiles():
     cfg.set_value("hunter", "total_hits", total_hits)
     cfg.set_value("hunter", "best_streak", best_streak)
     cfg.set_value("hunter", "rank", hunter_rank)
+    cfg.set_value("hunter", "achievements", hunter_achievements)
     cfg.save("user://kennel.cfg")
 
 func _load_dog_profiles():
