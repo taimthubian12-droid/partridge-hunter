@@ -135,6 +135,10 @@ var peer: ENetMultiplayerPeer
 var connected := false
 var is_host := false
 var status_text := "جاهز — أنشئ غرفة أو انضم إليها"
+var hunt_feedback := ""
+var hunt_feedback_timer := 0.0
+var hunt_feedback_success := false
+var round_shots := 0
 var host_ip := "192.168.1.2"
 var players: Dictionary = {}
 var editing_name := false
@@ -889,6 +893,12 @@ func _dog_found_prey():
         _set_dog_state.rpc(false, true)
     queue_redraw()
 
+func _show_hunt_feedback(message: String, success: bool):
+    hunt_feedback = message
+    hunt_feedback_success = success
+    hunt_feedback_timer = 1.2
+    queue_redraw()
+
 func _fire_at(point: Vector2):
     if not partridge_visible:
         status_text = "الوقت ليلي — عُد في وقت نشاط الحجل"
@@ -904,6 +914,7 @@ func _fire_at(point: Vector2):
         queue_redraw()
         return
     ammo -= 1
+    round_shots += 1
     if hunting_mode == 2:
         challenge_ammo = maxi(0, challenge_ammo - 1)
     if point.distance_to(target) < 75:
@@ -932,14 +943,20 @@ func _fire_at(point: Vector2):
         target = _new_target()
         dog_has_found_prey = false
         status_text = "إصابة! أطلق النار على الطريدة التالية"
+        _show_hunt_feedback("🎯 إصابة! +%d عملة" % last_hunt_reward, true)
         _sync_local_player()
     else:
         shots_fired += 1
         streak = 0
         status_text = "لم تصب الهدف — بدأت سلسلة جديدة"
+        _show_hunt_feedback("💨 لم تصب — حاول مرة أخرى", false)
     queue_redraw()
 
 func _process(delta):
+    if hunt_feedback_timer > 0.0:
+        hunt_feedback_timer = maxf(0.0, hunt_feedback_timer - delta)
+        if hunt_feedback_timer == 0.0:
+            hunt_feedback = ""
     _update_dog_search(delta)
     weather_refresh_timer += delta
     if weather_refresh_timer >= weather_refresh_seconds:
@@ -1241,11 +1258,18 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(35, 680), "القرية: " + selected_village + "   (اضغط للتغيير)", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(25, 715), "الوقت والطقس: " + _hunting_condition_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fff0a8"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 740), "تأثير الظروف على الصيد: %.2fx" % _world_difficulty(), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#d9f99d"))
+    draw_rect(Rect2(20, 555, 680, 10), Color("#294f32"))
+    var round_progress := clampf(float(mission_progress) / float(maxi(1, mission_target)), 0.0, 1.0)
+    draw_rect(Rect2(20, 555, 680 * round_progress, 10), Color("#d9f99d"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 765), "المرحلة %d | المهمة: %s — %d/%d | المكافأة: %d" % [mission_level, selected_village, mission_progress, mission_target, mission_reward], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffe08a"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 790), "التضاريس: %s | الكلب: %s" % [terrain_type, ("يبحث عن الحجل" if dog_searching else "جاهز")], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#c7f9cc"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 815), "كلبك: %s  | اضغط على منطقة الكلب لتغيير السلالة" % dog_variant_names[dog_variant - 1], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
-    draw_string(ThemeDB.fallback_font, Vector2(25, 840), "السرعة %.1f | الشم %.1f | الدقة %d%%" % [_dog_stat("speed"), _dog_stat("scent"), int(_dog_stat("accuracy") * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fde68a"))
-    draw_string(ThemeDB.fallback_font, Vector2(25, 865), "🐕 مستوى %d | XP %d/%d | نقاط تطوير: %d" % [dog_level, dog_xp, dog_xp_next, dog_upgrade_points], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fef3c7"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 840), "الطلقات في الجولة: %d | النمط: %s" % [round_shots, hunting_mode_names[hunting_mode]], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#dbeafe"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 865), "السرعة %.1f | الشم %.1f | الدقة %d%%" % [_dog_stat("speed"), _dog_stat("scent"), int(_dog_stat("accuracy") * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fde68a"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 890), "🐕 مستوى %d | XP %d/%d | نقاط تطوير: %d" % [dog_level, dog_xp, dog_xp_next, dog_upgrade_points], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fef3c7"))
+    if hunt_feedback_timer > 0.0 and not hunt_feedback.is_empty():
+        draw_rect(Rect2(130, 300, 460, 70), Color("#173f2b"))
+        draw_string(ThemeDB.fallback_font, Vector2(155, 345), hunt_feedback, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color("#d9f99d") if hunt_feedback_success else Color("#fecaca"))
     if not dog_upgrade_open:
         draw_rect(Rect2(20, 915, 210, 50), Color("#315d39"))
         draw_rect(Rect2(250, 915, 210, 50), Color("#315d39"))
