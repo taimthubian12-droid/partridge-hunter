@@ -64,6 +64,13 @@ var dog_search_duration := 3.0
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
+const DOG_STATS := [
+    {"speed": 1.00, "scent": 1.00, "accuracy": 0.70},
+    {"speed": 1.05, "scent": 1.15, "accuracy": 0.74},
+    {"speed": 1.12, "scent": 1.05, "accuracy": 0.76},
+    {"speed": 1.30, "scent": 0.95, "accuracy": 0.72},
+    {"speed": 1.08, "scent": 1.30, "accuracy": 0.82},
+]
 var partridge_visible := true
 var live_weather_enabled := true
 var weather_code := 0
@@ -288,6 +295,34 @@ func _apply_mission_level():
     dog_search_duration = maxf(1.5, 3.5 - mission_level * 0.15)
     terrain_type = _terrain_for_area()
 
+func _dog_stat(name: String) -> float:
+    return float(DOG_STATS[dog_variant - 1].get(name, 1.0))
+
+func _start_dog_search():
+    if dog_searching:
+        return
+    dog_searching = true
+    dog_search_progress = 0.0
+    dog_has_found_prey = false
+    status_text = "%s بدأ البحث..." % dog_variant_names[dog_variant - 1]
+    queue_redraw()
+
+func _update_dog_search(delta):
+    if not dog_searching:
+        return
+    dog_search_progress += delta * _dog_stat("speed") * _dog_stat("scent")
+    var required = dog_search_duration / maxf(0.55, _dog_stat("scent"))
+    if dog_search_progress >= required:
+        dog_searching = false
+        var roll = rng.randf()
+        if roll <= _dog_stat("accuracy"):
+            dog_has_found_prey = true
+            status_text = "🐕 وجد الحجل! أصبح الهدف أسهل للرمي"
+            target += Vector2(rng.randf_range(-20.0, 20.0), rng.randf_range(-15.0, 15.0))
+        else:
+            status_text = "الكلب لم يجد الحجل هذه المرة — أعد البحث"
+        queue_redraw()
+
 func _advance_mission():
     mission_level += 1
     mission_progress = 0
@@ -486,6 +521,7 @@ func _fire_at(point: Vector2):
     queue_redraw()
 
 func _process(delta):
+    _update_dog_search(delta)
     weather_refresh_timer += delta
     if weather_refresh_timer >= weather_refresh_seconds:
         weather_refresh_timer = 0.0
@@ -553,6 +589,10 @@ func _unhandled_input(event):
         dog_variant = 1
     status_text = "تم اختيار %s" % dog_variant_names[dog_variant - 1]
     queue_redraw()
+    return
+
+if p.y >= 805 and p.y < 850 and p.x < 500:
+    _start_dog_search()
     return
 
 if p.y >= 610 and p.y < 638:
@@ -644,6 +684,7 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(25, 765), "المرحلة %d | المهمة: %s — %d/%d | المكافأة: %d" % [mission_level, selected_village, mission_progress, mission_target, mission_reward], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffe08a"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 790), "التضاريس: %s | الكلب: %s" % [terrain_type, ("يبحث عن الحجل" if dog_searching else "جاهز")], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#c7f9cc"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 815), "كلبك: %s  | اضغط على منطقة الكلب لتغيير السلالة" % dog_variant_names[dog_variant - 1], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 840), "السرعة %.1f | الشم %.1f | الدقة %d%%" % [_dog_stat("speed"), _dog_stat("scent"), int(_dog_stat("accuracy") * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fde68a"))
     # Simple in-engine Pointer silhouette so the game does not depend on external image files.
     var dog_pos = Vector2(570, 835)
     draw_circle(dog_pos + Vector2(-18, 0), 14, Color("#f4f1e8"))
