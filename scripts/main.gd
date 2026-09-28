@@ -63,6 +63,8 @@ var track_type := "آثار أقدام"
 var track_quality := 0.75
 var track_direction := Vector2.RIGHT
 var track_clues_found := 0
+var danger_alert_timer := 0.0
+var prey_last_turn := 0.0
 var prey_danger_level := 0
 const PREY_TYPES := ["الحجل", "الأرنب البري", "السمان", "الحمام البري", "الدراج", "الذئب", "الضبع"]
 var partridge_velocity := Vector2(0.0, 0.0)
@@ -1022,6 +1024,24 @@ func _fire_at(point: Vector2):
         status_text = "لم تصب الهدف — بدأت سلسلة جديدة"
         _show_hunt_feedback("💨 لم تصب — حاول مرة أخرى", false)
     queue_redraw()
+
+func _update_danger_behavior(delta):
+    if prey_danger_level <= 0 or not prey_revealed:
+        danger_alert_timer = maxf(0.0, danger_alert_timer - delta)
+        return
+    danger_alert_timer = maxf(0.0, danger_alert_timer - delta)
+    prey_last_turn -= delta
+    if prey_last_turn <= 0.0:
+        var turn_amount = rng.randf_range(-0.9, 0.9)
+        if prey_species == "الذئب":
+            turn_amount *= 1.25
+        else:
+            turn_amount *= 0.85
+        partridge_velocity = partridge_velocity.rotated(turn_amount)
+        prey_last_turn = rng.randf_range(0.8, 1.8)
+    if target.distance_to(Vector2(360.0, 620.0)) < 170.0:
+        danger_alert_timer = 1.2
+        status_text = "خطر قريب: %s — تحرك بحذر" % prey_species
 
 func _process(delta):
     if hunt_feedback_timer > 0.0:
