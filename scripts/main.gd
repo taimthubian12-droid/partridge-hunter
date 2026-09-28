@@ -81,6 +81,12 @@ var daily_reward_amount := 250
 var reward_chest_count := 0
 var total_coins_earned := 0
 var last_hunt_reward := 0
+var daily_missions_date := ""
+var daily_missions_claimed := [false, false, false]
+var daily_mission_progress := [0, 0, 0]
+var weekly_missions_week := ""
+var weekly_mission_progress := 0
+var weekly_mission_claimed := false
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
@@ -356,6 +362,12 @@ func _save_dog_profiles():
     cfg.set_value("rewards", "daily_claimed_date", daily_reward_claimed_date)
     cfg.set_value("rewards", "chests", reward_chest_count)
     cfg.set_value("rewards", "total_earned", total_coins_earned)
+    cfg.set_value("missions", "daily_date", daily_missions_date)
+    cfg.set_value("missions", "daily_claimed", daily_missions_claimed)
+    cfg.set_value("missions", "daily_progress", daily_mission_progress)
+    cfg.set_value("missions", "weekly_week", weekly_missions_week)
+    cfg.set_value("missions", "weekly_progress", weekly_mission_progress)
+    cfg.set_value("missions", "weekly_claimed", weekly_mission_claimed)
     cfg.save("user://kennel.cfg")
 
 func _load_dog_profiles():
@@ -376,6 +388,13 @@ func _load_dog_profiles():
     daily_reward_claimed_date = str(cfg.get_value("rewards", "daily_claimed_date", daily_reward_claimed_date))
     reward_chest_count = maxi(0, int(cfg.get_value("rewards", "chests", reward_chest_count)))
     total_coins_earned = maxi(0, int(cfg.get_value("rewards", "total_earned", total_coins_earned)))
+    daily_missions_date = str(cfg.get_value("missions", "daily_date", ""))
+    daily_missions_claimed = cfg.get_value("missions", "daily_claimed", daily_missions_claimed)
+    daily_mission_progress = cfg.get_value("missions", "daily_progress", daily_mission_progress)
+    weekly_missions_week = str(cfg.get_value("missions", "weekly_week", ""))
+    weekly_mission_progress = int(cfg.get_value("missions", "weekly_progress", 0))
+    weekly_mission_claimed = bool(cfg.get_value("missions", "weekly_claimed", false))
+    _refresh_missions()
     _sync_active_profile()
 
 func _buy_or_select_dog(index: int):
@@ -452,7 +471,8 @@ func _hunt_coin_reward() -> int:
     var condition_bonus := maxi(0, 8 - roundi((_world_difficulty() - 1.0) * 8.0))
     return maxi(5, base + streak_bonus + accuracy_bonus + condition_bonus)
 
-func _grant_hunt_reward():
+func _grant_hunt_reward()
+        _update_activity_missions():
     last_hunt_reward = _hunt_coin_reward()
     dog_coins += last_hunt_reward
     total_coins_earned += last_hunt_reward
@@ -474,6 +494,63 @@ func _open_reward_chest():
     status_text = "🎁 فتحت الصندوق وحصلت على +%d عملة" % chest_reward
     _save_dog_profiles()
     queue_redraw()
+
+func _mission_day_key() -> String:
+    return Time.get_date_string_from_system()
+
+func _mission_week_key() -> String:
+    var d = Time.get_date_dict_from_system()
+    return "%04d-W%02d" % [int(d.year), int((int(d.day_of_year) - 1) / 7) + 1]
+
+func _refresh_missions():
+    var day = _mission_day_key()
+    if daily_missions_date != day:
+        daily_missions_date = day
+        daily_missions_claimed = [false, false, false]
+        daily_mission_progress = [0, 0, 0]
+    var week = _mission_week_key()
+    if weekly_missions_week != week:
+        weekly_missions_week = week
+        weekly_mission_progress = 0
+        weekly_mission_claimed = false
+
+func _update_activity_missions():
+    _refresh_missions()
+    daily_mission_progress[0] = mini(5, daily_mission_progress[0] + 1)
+    daily_mission_progress[1] = mini(10, daily_mission_progress[1] + 1)
+    if streak >= 3:
+        daily_mission_progress[2] = mini(3, daily_mission_progress[2] + 1)
+    weekly_mission_progress = mini(25, weekly_mission_progress + 1)
+
+func _claim_activity_mission(index: int):
+    _refresh_missions()
+    var targets = [5, 10, 3]
+    var rewards = [80, 160, 260]
+    if index < 0 or index >= targets.size() or daily_missions_claimed[index]:
+        return
+    if daily_mission_progress[index] < targets[index]:
+        status_text = "المهمة اليومية لم تكتمل بعد"
+        return
+    daily_missions_claimed[index] = true
+    dog_coins += rewards[index]
+    total_coins_earned += rewards[index]
+    status_text = "🎯 مكافأة المهمة اليومية: +%d عملة" % rewards[index]
+    _save_dog_profiles()
+
+func _claim_weekly_mission():
+    _refresh_missions()
+    if weekly_mission_claimed:
+        status_text = "المكافأة الأسبوعية مستلمة"
+        return
+    if weekly_mission_progress < 25:
+        status_text = "أكمل 25 عملية صيد هذا الأسبوع"
+        return
+    weekly_mission_claimed = true
+    var reward = 900 + mission_level * 50
+    dog_coins += reward
+    total_coins_earned += reward
+    status_text = "🏆 مكافأة الأسبوع: +%d عملة" % reward
+    _save_dog_profiles()
 
 func _claim_daily_reward():
     var today = _today_key()
