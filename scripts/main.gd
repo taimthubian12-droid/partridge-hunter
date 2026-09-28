@@ -96,6 +96,11 @@ var best_streak := 0
 var hunter_rank := "مبتدئ"
 var hunter_profile_open := false
 var hunter_achievements := [false, false, false, false]
+var start_menu_open := true
+var hunting_mode := 0
+var hunting_mode_names := ["صيد حر", "مهمة", "تحدي السلسلة"]
+var hunting_mode_multiplier := 1.0
+var challenge_ammo := 0
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
@@ -153,6 +158,7 @@ func _ready():
     multiplayer.connection_failed.connect(_on_connection_failed)
     multiplayer.server_disconnected.connect(_on_server_disconnected)
     players[multiplayer.get_unique_id()] = {"name": hunter_name, "score": score}
+    start_menu_open = true
     queue_redraw()
 
 
@@ -531,13 +537,42 @@ func _record_hunt_stats(hit: bool):
         _add_hunter_xp(5)
     _save_dog_profiles()
 
+func _set_hunting_mode(mode: int):
+    hunting_mode = clampi(mode, 0, 2)
+    if hunting_mode == 0:
+        hunting_mode_multiplier = 1.0
+        status_text = "نمط الصيد الحر جاهز"
+    elif hunting_mode == 1:
+        hunting_mode_multiplier = 1.25
+        status_text = "نمط المهمة جاهز — مكافآت أعلى"
+    else:
+        hunting_mode_multiplier = 1.60
+        challenge_ammo = 5
+        ammo = challenge_ammo
+        streak = 0
+        status_text = "تحدي السلسلة: 5 طلقات — حافظ على السلسلة"
+    start_menu_open = false
+    target = _new_target()
+    partridge_visible = true
+    dog_has_found_prey = false
+    queue_redraw()
+
+func _open_start_menu():
+    start_menu_open = true
+    hunter_profile_open = false
+    location_menu_open = false
+    kennel_open = false
+    kennel_shop_open = false
+    dog_upgrade_open = false
+    queue_redraw()
+
 func _hunt_coin_reward() -> int:
     var accuracy := 0.0 if shots_fired == 0 else float(hits) / float(shots_fired)
     var base := 12 + mission_level * 3
     var streak_bonus := mini(streak * 2, 30)
     var accuracy_bonus := roundi(accuracy * 15.0)
     var condition_bonus := maxi(0, 8 - roundi((_world_difficulty() - 1.0) * 8.0))
-    return maxi(5, base + streak_bonus + accuracy_bonus + condition_bonus)
+    return maxi(5, roundi((base + streak_bonus + accuracy_bonus + condition_bonus) * hunting_mode_multiplier))
 
 func _grant_hunt_reward()
         _update_activity_missions():
@@ -926,6 +961,57 @@ func _unhandled_input(event):
         return
 
     var p = event.position
+
+    if start_menu_open:
+        if p.y >= 560 and p.y < 650:
+            _open_location_menu(0)
+            return
+        if p.y >= 665 and p.y < 735:
+            hunter_profile_open = true
+            start_menu_open = false
+            queue_redraw()
+            return
+        if p.y >= 755 and p.y < 830:
+            _set_hunting_mode(0)
+            return
+        if p.y >= 840 and p.y < 915:
+            _set_hunting_mode(1)
+            return
+        if p.y >= 925 and p.y < 1000:
+            _set_hunting_mode(2)
+            return
+        return
+
+    if start_menu_open:
+        draw_rect(Rect2(0, 0, 720, 1280), Color("#0b1d14"))
+        draw_rect(Rect2(20, 25, 680, 500), Color("#173f2b"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 85), "PARTRIDGE HUNTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 34, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(45, 125), "صيد الحجل", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color("#d9f99d"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 175), "ابدأ جولتك واختر طريقة اللعب", HORIZONTAL_ALIGNMENT_LEFT, -1, 21, Color("#fff0a8"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 225), "🏅 %s — المستوى %d" % [hunter_rank, hunter_level], HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("#bfdbfe"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 265), "🪙 %d عملة   |   🐕 %s" % [dog_coins, dog_variant_names[dog_variant - 1]], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fde68a"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 305), "📍 %s / %s / %s" % [selected_governorate, selected_area, selected_village], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(45, 340), "🌤 %s  %.1f°C  |  تضاريس: %s" % [weather, temperature, terrain_type], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#c7f9cc"))
+        draw_rect(Rect2(45, 385, 610, 18), Color("#294f32"))
+        draw_rect(Rect2(45, 385, 610 * clampf(float(hunter_xp) / float(maxi(1, hunter_xp_next)), 0.0, 1.0), 18), Color("#d9f99d"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 435), "تقدم المستوى: %d / %d XP" % [hunter_xp, hunter_xp_next], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+        draw_rect(Rect2(45, 465, 195, 48), Color("#315d39"))
+        draw_rect(Rect2(260, 465, 195, 48), Color("#315d39"))
+        draw_rect(Rect2(475, 465, 180, 48), Color("#315d39"))
+        draw_string(ThemeDB.fallback_font, Vector2(65, 497), "📍 تغيير الموقع", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(280, 497), "🏅 ملف الصياد", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(495, 497), "نمط: " + hunting_mode_names[hunting_mode], HORIZONTAL_ALIGNMENT_LEFT, 160, 14, Color("#fde68a"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 615), "اختر نمط الصيد", HORIZONTAL_ALIGNMENT_LEFT, -1, 25, Color.WHITE)
+        draw_rect(Rect2(45, 640, 610, 75), Color("#294f32"))
+        draw_rect(Rect2(45, 730, 610, 75), Color("#315d39"))
+        draw_rect(Rect2(45, 820, 610, 75), Color("#3f3b22"))
+        draw_rect(Rect2(45, 910, 610, 75), Color("#5a3820"))
+        draw_string(ThemeDB.fallback_font, Vector2(70, 687), "🎯 صيد حر — جولة عادية ومكافآت متوازنة", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(70, 777), "📋 مهمة — مكافآت الصيد ×1.25", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(70, 867), "🔥 تحدي السلسلة — 5 طلقات ومكافآت ×1.60", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fff0a8"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 1035), "الحالة: " + status_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#dbeafe"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 1080), "اضغط على أحد الأنماط لبدء الصيد", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#d9f99d"))
+        return
 
     if hunter_profile_open:
         if p.y < 120:
