@@ -930,6 +930,12 @@ if p.y >= 1040 and p.y < 1090:
 if p.y >= 1090 and p.y < 1140:
     _open_reward_chest()
     return
+if p.y >= 1140 and p.y < 1190:
+    _claim_activity_mission(0 if p.x < 240 else (1 if p.x < 480 else 2))
+    return
+if p.y >= 1190 and p.y < 1240:
+    _claim_weekly_mission()
+    return
 
 if p.y >= 805 and p.y < 850 and p.x < 500:
     _start_dog_search()
@@ -1051,6 +1057,8 @@ func _draw():
         var reward_state = "متاح +%d" % daily_reward_amount if daily_reward_claimed_date != _today_key() else "تم الاستلام"
         draw_string(ThemeDB.fallback_font, Vector2(500, 947), "🎁 اليومية: " + reward_state, HORIZONTAL_ALIGNMENT_LEFT, 195, 15, Color("#fde68a"))
         draw_string(ThemeDB.fallback_font, Vector2(500, 980), "📦 الصندوق: %d | آخر مكافأة: %d" % [reward_chest_count, last_hunt_reward], HORIZONTAL_ALIGNMENT_LEFT, 195, 14, Color("#c7f9cc"))
+        draw_string(ThemeDB.fallback_font, Vector2(500, 1010), "🎯 يومي: %d/5  %d/10  %d/3" % [daily_mission_progress[0], daily_mission_progress[1], daily_mission_progress[2]], HORIZONTAL_ALIGNMENT_LEFT, 195, 13, Color("#fef3c7"))
+        draw_string(ThemeDB.fallback_font, Vector2(500, 1038), "🏆 أسبوعي: %d/25" % weekly_mission_progress, HORIZONTAL_ALIGNMENT_LEFT, 195, 13, Color("#bfdbfe"))
     if dog_upgrade_open:
         draw_rect(Rect2(20, 890, 680, 190), Color(0.05, 0.08, 0.12, 0.96))
         draw_string(ThemeDB.fallback_font, Vector2(35, 920), "تطوير البونتر — نقطة لكل تطوير", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#ffffff"))
