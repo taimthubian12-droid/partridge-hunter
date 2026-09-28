@@ -72,6 +72,9 @@ var dog_coins := 1200
 var owned_dogs := [true, false, false, false, false]
 var dog_profiles := []
 var dog_unlock_costs := [0, 400, 700, 1000, 1500]
+var kennel_shop_open := false
+var shop_items := [{"name":"طوق تدريب","cost":120,"bonus":"stamina"},{"name":"صافرة صيد","cost":180,"bonus":"speed"},{"name":"حقيبة مكافآت","cost":220,"bonus":"accuracy"},{"name":"رائحة تدريب","cost":260,"bonus":"scent"}]
+var owned_items := [false, false, false, false]
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
@@ -342,6 +345,7 @@ func _save_dog_profiles():
     cfg.set_value("kennel", "coins", dog_coins)
     cfg.set_value("kennel", "profiles", dog_profiles)
     cfg.set_value("kennel", "active", dog_variant)
+    cfg.set_value("shop", "owned_items", owned_items)
     cfg.save("user://kennel.cfg")
 
 func _load_dog_profiles():
@@ -355,6 +359,7 @@ func _load_dog_profiles():
     if saved is Array and saved.size() == DOG_STATS.size():
         dog_profiles = saved
     dog_variant = clampi(int(cfg.get_value("kennel", "active", dog_variant)), 1, DOG_STATS.size())
+    owned_items = cfg.get_value("shop", "owned_items", owned_items)
     _sync_active_profile()
 
 func _buy_or_select_dog(index: int):
@@ -379,6 +384,32 @@ func _buy_or_select_dog(index: int):
         _save_dog_profiles()
     else:
         status_text = "تحتاج إلى %d عملة لفتح هذا الكلب" % cost
+    queue_redraw()
+
+func _buy_shop_item(index: int):
+    if index < 0 or index >= shop_items.size():
+        return
+    if owned_items[index]:
+        status_text = "الأداة مملوكة بالفعل"
+        return
+    var item = shop_items[index]
+    var cost = int(item["cost"])
+    if dog_coins < cost:
+        status_text = "رصيدك غير كافٍ"
+        return
+    dog_coins -= cost
+    owned_items[index] = true
+    var stat = str(item["bonus"])
+    if dog_stats.has(stat):
+        dog_stats[stat] = float(dog_stats[stat]) + (0.10 if stat != "accuracy" else 0.05)
+    _save_dog_profiles()
+    status_text = "تم شراء %s وتطوير الكلب" % item["name"]
+    queue_redraw()
+
+func _open_shop():
+    kennel_shop_open = true
+    kennel_open = false
+    dog_upgrade_open = false
     queue_redraw()
 
 func _open_kennel():
@@ -705,6 +736,17 @@ func _unhandled_input(event):
     queue_redraw()
     return
 
+if kennel_shop_open:
+    if p.x >= 20 and p.x <= 700 and p.y >= 335 and p.y < 760:
+        var shop_index = int((p.y - 335) / 95.0)
+        if shop_index >= 0 and shop_index < shop_items.size():
+            _buy_shop_item(shop_index)
+        return
+    if p.y >= 760:
+        kennel_shop_open = false
+        queue_redraw()
+    return
+
 if kennel_open:
     if p.x >= 20 and p.x <= 700 and p.y >= 320 and p.y < 770:
         var idx = int((p.y - 320) / 82.0)
@@ -837,6 +879,21 @@ func _draw():
         draw_string(ThemeDB.fallback_font, Vector2(190, 990), "%.2f" % _dog_stat("speed"), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
         draw_string(ThemeDB.fallback_font, Vector2(350, 990), "%d%%" % int(_dog_stat("accuracy") * 100.0), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
         draw_string(ThemeDB.fallback_font, Vector2(515, 990), "%.2f" % _dog_stat("stamina"), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
+    if kennel_shop_open:
+        draw_rect(Rect2(15, 250, 690, 560), Color(0.04, 0.07, 0.10, 0.98))
+        draw_string(ThemeDB.fallback_font, Vector2(35, 285), "متجر تجهيزات البونتر", HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(35, 315), "الرصيد: %d عملة" % dog_coins, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#fde68a"))
+        for i in range(shop_items.size()):
+            var y = 365.0 + i * 95.0
+            var item = shop_items[i]
+            var state = "مملوك" if owned_items[i] else "%d عملة" % int(item["cost"])
+            draw_rect(Rect2(30, y - 28, 650, 75), Color("#17324d") if owned_items[i] else Color("#12202c"))
+            draw_string(ThemeDB.fallback_font, Vector2(50, y), str(item["name"]), HORIZONTAL_ALIGNMENT_LEFT, 280, 18, Color.WHITE)
+            draw_string(ThemeDB.fallback_font, Vector2(360, y), "تطوير: " + str(item["bonus"]), HORIZONTAL_ALIGNMENT_LEFT, 170, 15, Color("#c7f9cc"))
+            draw_string(ThemeDB.fallback_font, Vector2(535, y), state, HORIZONTAL_ALIGNMENT_LEFT, 120, 15, Color("#fde68a"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 775), "اضغط على التجهيز لشرائه", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
+        return
+
     if kennel_open:
         draw_rect(Rect2(15, 250, 690, 560), Color(0.04, 0.07, 0.10, 0.98))
         draw_string(ThemeDB.fallback_font, Vector2(35, 285), "حظيرة البونتر", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color.WHITE)
