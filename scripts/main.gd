@@ -66,6 +66,11 @@ var track_clues_found := 0
 var danger_alert_timer := 0.0
 var prey_last_turn := 0.0
 var prey_evasion_timer := 0.0
+var aim_point := Vector2(360.0, 620.0)
+var aim_target := Vector2(360.0, 620.0)
+var aim_touch_active := false
+var aim_sensitivity := 1.15
+var aim_smoothing := 12.0
 var prey_danger_level := 0
 const PREY_TYPES := ["الحجل", "الأرنب البري", "السمان", "الحمام البري", "الدراج", "الذئب", "الضبع"]
 var partridge_velocity := Vector2(0.0, 0.0)
@@ -1117,7 +1122,29 @@ func _process(delta):
         target.y = clampf(target.y, 285.0, 600.0)
     queue_redraw()
 
+func _handle_aim_touch(event):
+    if event is InputEventScreenDrag:
+        if event.index == 0:
+            aim_target += event.screen_relative * aim_sensitivity
+            aim_target.x = clampf(aim_target.x, 35.0, 685.0)
+            aim_target.y = clampf(aim_target.y, 300.0, 790.0)
+            queue_redraw()
+            return true
+    if event is InputEventScreenTouch and event.index == 0:
+        if event.pressed:
+            if event.position.y >= 300.0 and event.position.y < 790.0:
+                aim_touch_active = true
+                aim_target = event.position
+                return true
+        elif aim_touch_active:
+            aim_touch_active = false
+            _fire_at(aim_point)
+            return true
+    return false
+
 func _unhandled_input(event):
+    if _handle_aim_touch(event):
+        return
     if event is InputEventKey and event.pressed and editing_name:
         if event.keycode == KEY_BACKSPACE:
             hunter_name = hunter_name.left(max(0, hunter_name.length() - 1))
@@ -1351,7 +1378,17 @@ func _map_position_for_area() -> Vector2:
     var y = 875.0 - ((coords.x - min_lat) / (max_lat - min_lat)) * 100.0
     return Vector2(clampf(x, 490.0, 680.0), clampf(y, 775.0, 875.0))
 
+func _draw_aim_crosshair():
+    var r = 34.0
+    draw_circle(aim_point, r, Color("#d9f99d"), false, 3.0)
+    draw_circle(aim_point, 4.0, Color("#fff0a8"))
+    draw_line(aim_point + Vector2(-52, 0), aim_point + Vector2(-22, 0), Color("#d9f99d"), 3.0)
+    draw_line(aim_point + Vector2(22, 0), aim_point + Vector2(52, 0), Color("#d9f99d"), 3.0)
+    draw_line(aim_point + Vector2(0, -52), aim_point + Vector2(0, -22), Color("#d9f99d"), 3.0)
+    draw_line(aim_point + Vector2(0, 22), aim_point + Vector2(0, 52), Color("#d9f99d"), 3.0)
+
 func _draw():
+    _draw_aim_crosshair()
     _draw_track_clues()
     if location_menu_open:
         draw_rect(Rect2(0, 0, 720, 1280), Color("#10251a"))
