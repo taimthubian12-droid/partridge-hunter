@@ -1026,7 +1026,8 @@ func _fire_at(point: Vector2):
             _advance_mission()
         target = _new_target()
         dog_has_found_prey = false
-        status_text = "إصابة! أطلق النار على الطريدة التالية"
+        var precision_percent = int(clampf((1.0 - aim_error / maxf(1.0, precision_window)) * 100.0, 0.0, 100.0))
+        status_text = "إصابة دقيقة %d%% — المسافة %.0f" % [precision_percent, Vector2(360.0, 620.0).distance_to(target)]
         _show_hunt_feedback("🎯 إصابة! +%d عملة" % last_hunt_reward, true)
         _sync_local_player()
     else:
