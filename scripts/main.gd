@@ -52,6 +52,9 @@ var weather_updated_at := ""
 var weather_request: HTTPRequest
 var weather_refresh_seconds := 900.0
 var weather_refresh_timer := 0.0
+var weather_request_busy := false
+var partridge_speed := 1.0
+var partridge_visible := true
 var live_weather_enabled := true
 var weather_code := 0
 var precipitation_mm := 0.0
@@ -140,16 +143,19 @@ func select_village(name: String):
     queue_redraw()
 
 func _request_live_weather():
-    if not live_weather_enabled or weather_request == null:
+    if not live_weather_enabled or weather_request == null or weather_request_busy:
         return
+    weather_request_busy = true
     var coords = AREA_COORDINATES.get(selected_governorate + "|" + selected_area, Vector2(33.51, 36.29))
     var url = "https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code,wind_speed_10m,precipitation&daily=sunrise,sunset&timezone=auto" % [str(coords.x), str(coords.y)]
     var err = weather_request.request(url)
     if err != OK:
+        weather_request_busy = false
         live_weather_enabled = false
         status_text = "تعذر تحديث الطقس — تعمل اللعبة بالوضع المحلي"
 
 func _on_weather_request_completed(result, response_code, _headers, body):
+    weather_request_busy = false
     if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
         status_text = "تعذر جلب الطقس — تم استخدام آخر حالة محفوظة"
         return
@@ -234,6 +240,17 @@ func _world_difficulty() -> float:
         difficulty += 0.30
     return difficulty
 
+func _update_partridge_behavior():
+    partridge_visible = daylight
+    partridge_speed = 1.0
+    if game_hour < 7.0 or game_hour >= 17.0:
+        partridge_speed += 0.20
+    if weather == "ضباب" or weather == "رذاذ/مطر" or weather == "زخات مطر":
+        partridge_speed -= 0.10
+    if wind_speed >= 7.0:
+        partridge_speed += 0.15
+    partridge_speed = clampf(partridge_speed, 0.75, 1.5)
+
 func _hunting_condition_text() -> String:
     var period = "فجر" if game_hour < 7.0 else ("صباح" if game_hour < 12.0 else ("بعد الظهر" if game_hour < 17.0 else ("غروب" if game_hour < 20.0 else "ليل")))
     var live = "مباشر" if live_weather_enabled and weather_updated_at != "" else "محلي"
@@ -241,6 +258,8 @@ func _hunting_condition_text() -> String:
 
 func _new_target() -> Vector2:
     var spread = 1.0 / _world_difficulty()
+    if not partridge_visible:
+        spread *= 0.55
     var center = Vector2(360, 620)
     var radius_x = 280.0 * spread
     var radius_y = 360.0 * spread
@@ -371,6 +390,10 @@ func _dog_found_prey():
     queue_redraw()
 
 func _fire_at(point: Vector2):
+    if not partridge_visible:
+        status_text = "الوقت ليلي — عُد في وقت نشاط الحجل"
+        queue_redraw()
+        return
     if ammo <= 0:
         ammo = 8
         status_text = "تمت إعادة تعبئة الخرطوش"
@@ -408,6 +431,7 @@ func _process(delta):
         _request_live_weather()
     if not live_weather_enabled or weather_updated_at.is_empty():
         _update_world_conditions()
+    _update_partridge_behavior()
     queue_redraw()
 
 func _unhandled_input(event):
@@ -519,10 +543,11 @@ func _draw():
             break
 
     # Partridge.
-    draw_circle(target, 48, Color("#6b4226"))
-    draw_circle(target + Vector2(-28, -22), 23, Color("#80502d"))
-    draw_circle(target + Vector2(-43, -27), 7, Color.BLACK)
-    draw_circle(target + Vector2(-45, -29), 3, Color.WHITE)
+    if partridge_visible:
+        draw_circle(target, 48, Color("#6b4226"))
+        draw_circle(target + Vector2(-28, -22), 23, Color("#80502d"))
+        draw_circle(target + Vector2(-43, -27), 7, Color.BLACK)
+        draw_circle(target + Vector2(-45, -29), 3, Color.WHITE)
 
     draw_string(ThemeDB.fallback_font, Vector2(200, 1015), "الكلب: " + dog_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
     if dog_searching:
