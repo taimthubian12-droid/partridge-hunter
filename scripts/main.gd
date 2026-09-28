@@ -75,6 +75,7 @@ var dog_unlock_costs := [0, 400, 700, 1000, 1500]
 var kennel_shop_open := false
 var shop_items := [{"name":"طوق تدريب","cost":120,"bonus":"stamina"},{"name":"صافرة صيد","cost":180,"bonus":"speed"},{"name":"حقيبة مكافآت","cost":220,"bonus":"accuracy"},{"name":"رائحة تدريب","cost":260,"bonus":"scent"}]
 var owned_items := [false, false, false, false]
+var equipped_items := [false, false, false, false]
 var daily_reward_claimed_date := ""
 var daily_reward_amount := 250
 var terrain_type := "سهول"
@@ -348,6 +349,7 @@ func _save_dog_profiles():
     cfg.set_value("kennel", "profiles", dog_profiles)
     cfg.set_value("kennel", "active", dog_variant)
     cfg.set_value("shop", "owned_items", owned_items)
+    cfg.set_value("shop", "equipped_items", equipped_items)
     cfg.set_value("rewards", "daily_claimed_date", daily_reward_claimed_date)
     cfg.save("user://kennel.cfg")
 
@@ -363,6 +365,9 @@ func _load_dog_profiles():
         dog_profiles = saved
     dog_variant = clampi(int(cfg.get_value("kennel", "active", dog_variant)), 1, DOG_STATS.size())
     owned_items = cfg.get_value("shop", "owned_items", owned_items)
+    equipped_items = cfg.get_value("shop", "equipped_items", equipped_items)
+    if not (equipped_items is Array) or equipped_items.size() != shop_items.size():
+        equipped_items = [false, false, false, false]
     daily_reward_claimed_date = str(cfg.get_value("rewards", "daily_claimed_date", daily_reward_claimed_date))
     _sync_active_profile()
 
@@ -390,11 +395,20 @@ func _buy_or_select_dog(index: int):
         status_text = "تحتاج إلى %d عملة لفتح هذا الكلب" % cost
     queue_redraw()
 
+func _apply_equipped_item_bonus(index: int, enabled: bool):
+    if index < 0 or index >= shop_items.size():
+        return
+    var stat = str(shop_items[index]["bonus"])
+    if not dog_stats.has(stat):
+        return
+    var amount = (0.10 if stat != "accuracy" else 0.05)
+    dog_stats[stat] = float(dog_stats[stat]) + (amount if enabled else -amount)
+
 func _buy_shop_item(index: int):
     if index < 0 or index >= shop_items.size():
         return
     if owned_items[index]:
-        status_text = "الأداة مملوكة بالفعل"
+        _toggle_shop_item(index)
         return
     var item = shop_items[index]
     var cost = int(item["cost"])
@@ -403,12 +417,21 @@ func _buy_shop_item(index: int):
         return
     dog_coins -= cost
     owned_items[index] = true
-    var stat = str(item["bonus"])
-    if dog_stats.has(stat):
-        dog_stats[stat] = float(dog_stats[stat]) + (0.10 if stat != "accuracy" else 0.05)
+    equipped_items[index] = true
+    _apply_equipped_item_bonus(index, true)
     _save_dog_profiles()
-    status_text = "تم شراء %s وتطوير الكلب" % item["name"]
+    status_text = "تم شراء وتجهيز %s" % item["name"]
     queue_redraw()
+
+func _toggle_shop_item(index: int):
+    if index < 0 or index >= shop_items.size() or not owned_items[index]:
+        return
+    equipped_items[index] = not equipped_items[index]
+    _apply_equipped_item_bonus(index, equipped_items[index])
+    _save_dog_profiles()
+    status_text = ("%s: %s" % [shop_items[index]["name"], "تم التجهيز" if equipped_items[index] else "تم إلغاء التجهيز"])
+    queue_redraw()
+
 
 func _today_key() -> String:
     var d = Time.get_date_dict_from_system()
@@ -926,12 +949,12 @@ func _draw():
         for i in range(shop_items.size()):
             var y = 365.0 + i * 95.0
             var item = shop_items[i]
-            var state = "مملوك" if owned_items[i] else "%d عملة" % int(item["cost"])
+            var state = ("مجهز" if equipped_items[i] else "غير مجهز") if owned_items[i] else "%d عملة" % int(item["cost"])
             draw_rect(Rect2(30, y - 28, 650, 75), Color("#17324d") if owned_items[i] else Color("#12202c"))
             draw_string(ThemeDB.fallback_font, Vector2(50, y), str(item["name"]), HORIZONTAL_ALIGNMENT_LEFT, 280, 18, Color.WHITE)
             draw_string(ThemeDB.fallback_font, Vector2(360, y), "تطوير: " + str(item["bonus"]), HORIZONTAL_ALIGNMENT_LEFT, 170, 15, Color("#c7f9cc"))
             draw_string(ThemeDB.fallback_font, Vector2(535, y), state, HORIZONTAL_ALIGNMENT_LEFT, 120, 15, Color("#fde68a"))
-        draw_string(ThemeDB.fallback_font, Vector2(45, 775), "اضغط على التجهيز لشرائه", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 775), "اضغط على الأداة للشراء أو التجهيز/الإلغاء", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
         return
 
     if kennel_open:
