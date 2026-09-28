@@ -87,6 +87,13 @@ var daily_mission_progress := [0, 0, 0]
 var weekly_missions_week := ""
 var weekly_mission_progress := 0
 var weekly_mission_claimed := false
+var hunter_level := 1
+var hunter_xp := 0
+var hunter_xp_next := 100
+var total_hunts := 0
+var total_hits := 0
+var best_streak := 0
+var hunter_rank := "مبتدئ"
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
@@ -368,6 +375,12 @@ func _save_dog_profiles():
     cfg.set_value("missions", "weekly_week", weekly_missions_week)
     cfg.set_value("missions", "weekly_progress", weekly_mission_progress)
     cfg.set_value("missions", "weekly_claimed", weekly_mission_claimed)
+    cfg.set_value("hunter", "level", hunter_level)
+    cfg.set_value("hunter", "xp", hunter_xp)
+    cfg.set_value("hunter", "total_hunts", total_hunts)
+    cfg.set_value("hunter", "total_hits", total_hits)
+    cfg.set_value("hunter", "best_streak", best_streak)
+    cfg.set_value("hunter", "rank", hunter_rank)
     cfg.save("user://kennel.cfg")
 
 func _load_dog_profiles():
@@ -394,6 +407,13 @@ func _load_dog_profiles():
     weekly_missions_week = str(cfg.get_value("missions", "weekly_week", ""))
     weekly_mission_progress = int(cfg.get_value("missions", "weekly_progress", 0))
     weekly_mission_claimed = bool(cfg.get_value("missions", "weekly_claimed", false))
+    hunter_level = maxi(1, int(cfg.get_value("hunter", "level", 1)))
+    hunter_xp = maxi(0, int(cfg.get_value("hunter", "xp", 0)))
+    hunter_xp_next = 100 + (hunter_level - 1) * 50
+    total_hunts = maxi(0, int(cfg.get_value("hunter", "total_hunts", 0)))
+    total_hits = maxi(0, int(cfg.get_value("hunter", "total_hits", 0)))
+    best_streak = maxi(0, int(cfg.get_value("hunter", "best_streak", 0)))
+    hunter_rank = str(cfg.get_value("hunter", "rank", "مبتدئ"))
     _refresh_missions()
     _sync_active_profile()
 
@@ -462,6 +482,36 @@ func _toggle_shop_item(index: int):
 func _today_key() -> String:
     var d = Time.get_date_dict_from_system()
     return "%04d-%02d-%02d" % [int(d.year), int(d.month), int(d.day)]
+
+func _hunter_rank_for_level(level: int) -> String:
+    if level >= 20: return "أسطورة الحجل"
+    if level >= 15: return "صياد محترف"
+    if level >= 10: return "صياد خبير"
+    if level >= 6: return "صياد متقدم"
+    if level >= 3: return "صياد"
+    return "مبتدئ"
+
+func _add_hunter_xp(amount: int):
+    hunter_xp += maxi(0, amount)
+    while hunter_xp >= hunter_xp_next:
+        hunter_xp -= hunter_xp_next
+        hunter_level += 1
+        hunter_xp_next = 100 + (hunter_level - 1) * 50
+        var level_reward = 150 + hunter_level * 25
+        dog_coins += level_reward
+        total_coins_earned += level_reward
+        status_text = "🏅 ترقية! رتبة %s | +%d عملة" % [_hunter_rank_for_level(hunter_level), level_reward]
+    hunter_rank = _hunter_rank_for_level(hunter_level)
+
+func _record_hunt_stats(hit: bool):
+    total_hunts += 1
+    if hit:
+        total_hits += 1
+        best_streak = maxi(best_streak, streak)
+        _add_hunter_xp(20 + mission_level * 5)
+    else:
+        _add_hunter_xp(5)
+    _save_dog_profiles()
 
 func _hunt_coin_reward() -> int:
     var accuracy := 0.0 if shots_fired == 0 else float(hits) / float(shots_fired)
@@ -809,6 +859,7 @@ func _fire_at(point: Vector2):
         score += 10 + shell_bonus + streak_bonus
         mission_progress += 1
         _grant_hunt_reward()
+        _record_hunt_stats(true)
         if mission_progress >= mission_target:
             score += mission_reward
             dog_coins += int(mission_reward / 10)
