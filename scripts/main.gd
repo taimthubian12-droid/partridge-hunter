@@ -1182,6 +1182,9 @@ if p.y >= 1190 and p.y < 1240:
     _claim_weekly_mission()
     return
 
+if p.y >= 805 and p.y < 850 and p.x < 250:
+    _inspect_track()
+    return
 if p.y >= 805 and p.y < 850 and p.x < 500:
     _start_dog_search()
     return
