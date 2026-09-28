@@ -561,6 +561,16 @@ func _unhandled_input(event):
 
     _fire_at(p)
 
+func _map_position_for_area() -> Vector2:
+    var coords = AREA_COORDINATES.get(selected_governorate + "|" + selected_area, Vector2(35.0, 37.0))
+    var min_lat = 32.0
+    var max_lat = 38.0
+    var min_lon = 35.0
+    var max_lon = 43.0
+    var x = 485.0 + ((coords.y - min_lon) / (max_lon - min_lon)) * 195.0
+    var y = 875.0 - ((coords.x - min_lat) / (max_lat - min_lat)) * 100.0
+    return Vector2(clampf(x, 490.0, 680.0), clampf(y, 775.0, 875.0))
+
 func _draw():
     if location_menu_open:
         draw_rect(Rect2(0, 0, 720, 1280), Color("#10251a"))
@@ -594,6 +604,14 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(35, 680), "القرية: " + selected_village + "   (اضغط للتغيير)", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(25, 715), "الوقت والطقس: " + _hunting_condition_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fff0a8"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 740), "تأثير الظروف على الصيد: %.2fx" % _world_difficulty(), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#d9f99d"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 765), "المهمة: %s — %d/%d | المكافأة: %d نقطة" % [selected_village, mission_progress, mission_target, mission_reward], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffe08a"))
+    # Mini map: visual position of the selected hunting area.
+    draw_rect(Rect2(470, 755, 225, 145), Color("#183b2a"))
+    draw_rect(Rect2(480, 765, 205, 125), Color("#28563a"))
+    var map_pos = _map_position_for_area()
+    draw_circle(map_pos, 9.0, Color("#ffe08a"))
+    draw_circle(map_pos, 16.0, Color(1, 1, 1, 0.25))
+    draw_string(ThemeDB.fallback_font, Vector2(485, 885), selected_area, HORIZONTAL_ALIGNMENT_LEFT, 195, 15, Color.WHITE)
 
     draw_rect(Rect2(20, 185, 680, 55), Color("#294f32"))
     draw_string(ThemeDB.fallback_font, Vector2(35, 221), "اسم الصياد: " + hunter_name + ("  [تعديل]" if editing_name else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
