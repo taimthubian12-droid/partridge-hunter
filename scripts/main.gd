@@ -54,6 +54,10 @@ var weather_refresh_seconds := 900.0
 var weather_refresh_timer := 0.0
 var weather_request_busy := false
 var partridge_speed := 1.0
+var prey_species := "الحجل"
+var prey_radius := 48.0
+var prey_reward_multiplier := 1.0
+const PREY_TYPES := ["الحجل", "الأرنب البري", "السمان", "الحمام البري", "الدراج"]
 var partridge_velocity := Vector2(0.0, 0.0)
 var mission_target := 5
 var mission_progress := 0
@@ -572,7 +576,7 @@ func _open_start_menu():
 
 func _hunt_coin_reward() -> int:
     var accuracy := 0.0 if shots_fired == 0 else float(hits) / float(shots_fired)
-    var base := 12 + mission_level * 3
+    var base := roundi((12 + mission_level * 3) * prey_reward_multiplier)
     var streak_bonus := mini(streak * 2, 30)
     var accuracy_bonus := roundi(accuracy * 15.0)
     var condition_bonus := maxi(0, 8 - roundi((_world_difficulty() - 1.0) * 8.0))
@@ -738,9 +742,22 @@ func _advance_mission():
     _apply_mission_level()
     status_text = "المرحلة %d بدأت — %s" % [mission_level, terrain_type]
 
+func _choose_prey():
+    var pool = PREY_TYPES.duplicate()
+    if terrain_type == "غابات وأودية":
+        pool = ["الدراج", "الحمام البري", "الأرنب البري", "الحجل"]
+    elif terrain_type == "سهول نهرية":
+        pool = ["السمان", "الحمام البري", "الأرنب البري", "الحجل"]
+    elif terrain_type == "جبال وهضاب":
+        pool = ["الحجل", "الأرنب البري", "السمان"]
+    prey_species = pool[rng.randi_range(0, pool.size() - 1)]
+    prey_radius = {"الحجل":48.0,"الأرنب البري":42.0,"السمان":34.0,"الحمام البري":30.0,"الدراج":52.0}.get(prey_species, 44.0)
+    prey_reward_multiplier = {"الحجل":1.0,"الأرنب البري":1.15,"السمان":1.25,"الحمام البري":1.35,"الدراج":1.60}.get(prey_species, 1.0)
+
 func _update_partridge_behavior():
     partridge_visible = daylight
     partridge_speed = 1.0
+    partridge_speed *= {"الحجل":1.0,"الأرنب البري":1.15,"السمان":1.25,"الحمام البري":1.40,"الدراج":0.90}.get(prey_species, 1.0)
     if game_hour < 7.0 or game_hour >= 17.0:
         partridge_speed += 0.20
     if weather == "ضباب" or weather == "رذاذ/مطر" or weather == "زخات مطر":
@@ -761,6 +778,7 @@ func _hunting_condition_text() -> String:
     return "%s | %s | %s°C | رياح %.1f م/ث | %s" % [period, weather, temperature, wind_speed, live]
 
 func _new_target() -> Vector2:
+    _choose_prey()
     var spread = 1.0 / _world_difficulty()
     if not partridge_visible:
         spread *= 0.55
@@ -917,7 +935,7 @@ func _fire_at(point: Vector2):
     round_shots += 1
     if hunting_mode == 2:
         challenge_ammo = maxi(0, challenge_ammo - 1)
-    if point.distance_to(target) < 75:
+    if point.distance_to(target) < prey_radius * 1.55:
         shots_fired += 1
         hits += 1
         streak += 1
@@ -1262,7 +1280,7 @@ func _draw():
     var round_progress := clampf(float(mission_progress) / float(maxi(1, mission_target)), 0.0, 1.0)
     draw_rect(Rect2(20, 555, 680 * round_progress, 10), Color("#d9f99d"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 765), "المرحلة %d | المهمة: %s — %d/%d | المكافأة: %d" % [mission_level, selected_village, mission_progress, mission_target, mission_reward], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffe08a"))
-    draw_string(ThemeDB.fallback_font, Vector2(25, 790), "التضاريس: %s | الكلب: %s" % [terrain_type, ("يبحث عن الحجل" if dog_searching else "جاهز")], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#c7f9cc"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 790), "التضاريس: %s | الطريدة: %s | الكلب: %s" % [terrain_type, prey_species, ("يبحث عن الطريدة" if dog_searching else "جاهز")], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#c7f9cc"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 815), "كلبك: %s  | اضغط على منطقة الكلب لتغيير السلالة" % dog_variant_names[dog_variant - 1], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 840), "الطلقات في الجولة: %d | النمط: %s" % [round_shots, hunting_mode_names[hunting_mode]], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#dbeafe"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 865), "السرعة %.1f | الشم %.1f | الدقة %d%%" % [_dog_stat("speed"), _dog_stat("scent"), int(_dog_stat("accuracy") * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fde68a"))
@@ -1357,12 +1375,31 @@ func _draw():
         if y > 545:
             break
 
-    # Partridge.
+    # Dynamic prey.
     if partridge_visible:
-        draw_circle(target, 48, Color("#6b4226"))
-        draw_circle(target + Vector2(-28, -22), 23, Color("#80502d"))
-        draw_circle(target + Vector2(-43, -27), 7, Color.BLACK)
-        draw_circle(target + Vector2(-45, -29), 3, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(target.x - 70, target.y - 65), prey_species, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#fff0a8"))
+        if prey_species == "الأرنب البري":
+            draw_circle(target, 28, Color("#8b7355"))
+            draw_circle(target + Vector2(22, -18), 18, Color("#9a8060"))
+            draw_line(target + Vector2(28, -30), target + Vector2(30, -55), Color("#9a8060"), 8)
+            draw_line(target + Vector2(15, -31), target + Vector2(12, -56), Color("#9a8060"), 8)
+        elif prey_species == "السمان":
+            draw_circle(target, 28, Color("#6f4e37"))
+            draw_circle(target + Vector2(-22, -18), 16, Color("#806044"))
+            draw_circle(target + Vector2(-30, -20), 5, Color.BLACK)
+        elif prey_species == "الحمام البري":
+            draw_circle(target, 24, Color("#718096"))
+            draw_circle(target + Vector2(-20, -18), 14, Color("#94a3b8"))
+            draw_line(target + Vector2(5, 0), target + Vector2(42, -22), Color("#a8b4c4"), 9)
+        elif prey_species == "الدراج":
+            draw_circle(target, 48, Color("#7c4a25"))
+            draw_circle(target + Vector2(-32, -25), 20, Color("#256d4a"))
+            draw_circle(target + Vector2(-45, -29), 6, Color.BLACK)
+        else:
+            draw_circle(target, 48, Color("#6b4226"))
+            draw_circle(target + Vector2(-28, -22), 23, Color("#80502d"))
+            draw_circle(target + Vector2(-43, -27), 7, Color.BLACK)
+            draw_circle(target + Vector2(-45, -29), 3, Color.WHITE)
 
     draw_string(ThemeDB.fallback_font, Vector2(200, 1015), "الكلب: " + dog_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
     if dog_searching:
