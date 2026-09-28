@@ -75,6 +75,8 @@ var dog_unlock_costs := [0, 400, 700, 1000, 1500]
 var kennel_shop_open := false
 var shop_items := [{"name":"طوق تدريب","cost":120,"bonus":"stamina"},{"name":"صافرة صيد","cost":180,"bonus":"speed"},{"name":"حقيبة مكافآت","cost":220,"bonus":"accuracy"},{"name":"رائحة تدريب","cost":260,"bonus":"scent"}]
 var owned_items := [false, false, false, false]
+var daily_reward_claimed_date := ""
+var daily_reward_amount := 250
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
@@ -346,6 +348,7 @@ func _save_dog_profiles():
     cfg.set_value("kennel", "profiles", dog_profiles)
     cfg.set_value("kennel", "active", dog_variant)
     cfg.set_value("shop", "owned_items", owned_items)
+    cfg.set_value("rewards", "daily_claimed_date", daily_reward_claimed_date)
     cfg.save("user://kennel.cfg")
 
 func _load_dog_profiles():
@@ -360,6 +363,7 @@ func _load_dog_profiles():
         dog_profiles = saved
     dog_variant = clampi(int(cfg.get_value("kennel", "active", dog_variant)), 1, DOG_STATS.size())
     owned_items = cfg.get_value("shop", "owned_items", owned_items)
+    daily_reward_claimed_date = str(cfg.get_value("rewards", "daily_claimed_date", daily_reward_claimed_date))
     _sync_active_profile()
 
 func _buy_or_select_dog(index: int):
@@ -404,6 +408,21 @@ func _buy_shop_item(index: int):
         dog_stats[stat] = float(dog_stats[stat]) + (0.10 if stat != "accuracy" else 0.05)
     _save_dog_profiles()
     status_text = "تم شراء %s وتطوير الكلب" % item["name"]
+    queue_redraw()
+
+func _today_key() -> String:
+    var d = Time.get_date_dict_from_system()
+    return "%04d-%02d-%02d" % [int(d.year), int(d.month), int(d.day)]
+
+func _claim_daily_reward():
+    var today = _today_key()
+    if daily_reward_claimed_date == today:
+        status_text = "تم استلام مكافأة اليوم مسبقاً"
+        return
+    dog_coins += daily_reward_amount
+    daily_reward_claimed_date = today
+    _save_dog_profiles()
+    status_text = "🎁 استلمت المكافأة اليومية: +%d عملة" % daily_reward_amount
     queue_redraw()
 
 func _open_shop():
@@ -653,7 +672,9 @@ func _fire_at(point: Vector2):
         mission_progress += 1
         if mission_progress >= mission_target:
             score += mission_reward
-            status_text = "اكتملت المرحلة! مكافأة %d نقطة" % mission_reward
+            dog_coins += mission_reward / 10
+            status_text = "اكتملت المرحلة! +%d نقطة و+%d عملة" % [mission_reward, mission_reward / 10]
+            _save_dog_profiles()
             _advance_mission()
         target = _new_target()
         dog_has_found_prey = false
@@ -758,6 +779,16 @@ if kennel_open:
         queue_redraw()
     return
 
+if p.y >= 920 and p.y < 980:
+    _open_shop()
+    return
+if p.y >= 980 and p.y < 1040:
+    _open_kennel()
+    return
+if p.y >= 1040 and p.y < 1090:
+    _claim_daily_reward()
+    return
+
 if p.y >= 805 and p.y < 850 and p.x < 500:
     _start_dog_search()
     return
@@ -855,6 +886,7 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(25, 85), "صيد الحجل - Multiplayer", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color("#d9f99d"))
     draw_string(ThemeDB.fallback_font, Vector2(500, 45), "النقاط: " + str(score), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(500, 80), "الطلقات: " + str(ammo), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#ffe08a"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 105), "🪙 الرصيد: %d عملة" % dog_coins, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fde68a"))
     var accuracy := 0.0 if shots_fired == 0 else (float(hits) / float(shots_fired)) * 100.0
     draw_string(ThemeDB.fallback_font, Vector2(25, 575), "الدقة: %d%%   السلسلة: %d   أفضل سلسلة: %d" % [roundi(accuracy), streak, best_streak], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fff0a8"))
     draw_rect(Rect2(20, 610, 680, 78), Color("#315d39"))
@@ -868,6 +900,14 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(25, 815), "كلبك: %s  | اضغط على منطقة الكلب لتغيير السلالة" % dog_variant_names[dog_variant - 1], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 840), "السرعة %.1f | الشم %.1f | الدقة %d%%" % [_dog_stat("speed"), _dog_stat("scent"), int(_dog_stat("accuracy") * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fde68a"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 865), "🐕 مستوى %d | XP %d/%d | نقاط تطوير: %d" % [dog_level, dog_xp, dog_xp_next, dog_upgrade_points], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fef3c7"))
+    if not dog_upgrade_open:
+        draw_rect(Rect2(20, 915, 210, 50), Color("#315d39"))
+        draw_rect(Rect2(250, 915, 210, 50), Color("#315d39"))
+        draw_rect(Rect2(480, 915, 220, 50), Color("#315d39"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 947), "🛒 المتجر", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(275, 947), "🐕 الحظيرة", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+        var reward_state = "متاح +%d" % daily_reward_amount if daily_reward_claimed_date != _today_key() else "تم الاستلام"
+        draw_string(ThemeDB.fallback_font, Vector2(500, 947), "🎁 اليومية: " + reward_state, HORIZONTAL_ALIGNMENT_LEFT, 195, 15, Color("#fde68a"))
     if dog_upgrade_open:
         draw_rect(Rect2(20, 890, 680, 190), Color(0.05, 0.08, 0.12, 0.96))
         draw_string(ThemeDB.fallback_font, Vector2(35, 920), "تطوير البونتر — نقطة لكل تطوير", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#ffffff"))
