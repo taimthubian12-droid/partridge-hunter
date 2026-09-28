@@ -300,11 +300,23 @@ func _unhandled_input(event):
 
     var p = event.position
 
-    # Hunting location area: tap the location line to cycle governorate/area/village.
-    if p.y >= 610 and p.y < 690:
+    # Hunting location selectors: governorate, area, village.
+    if p.y >= 610 and p.y < 638:
         var gs = _governorates()
         var gi = gs.find(selected_governorate)
         select_governorate(gs[(gi + 1) % gs.size()])
+        return
+    if p.y >= 638 and p.y < 665:
+        var areas = _areas()
+        if areas.size() > 0:
+            var ai = areas.find(selected_area)
+            select_area(areas[(ai + 1) % areas.size()])
+        return
+    if p.y >= 665 and p.y < 690:
+        var villages = _villages()
+        if villages.size() > 0:
+            var vi = villages.find(selected_village)
+            select_village(villages[(vi + 1) % villages.size()])
         return
 
     # Name area.
@@ -352,8 +364,10 @@ func _draw():
     var accuracy := 0.0 if shots_fired == 0 else (float(hits) / float(shots_fired)) * 100.0
     draw_string(ThemeDB.fallback_font, Vector2(25, 575), "الدقة: %d%%   السلسلة: %d   أفضل سلسلة: %d" % [roundi(accuracy), streak, best_streak], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fff0a8"))
     draw_rect(Rect2(20, 610, 680, 78), Color("#315d39"))
-    draw_string(ThemeDB.fallback_font, Vector2(35, 635), "منطقة الصيد: %s / %s / %s" % [selected_governorate, selected_area, selected_village], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
-    draw_string(ThemeDB.fallback_font, Vector2(35, 665), "الوقت والطقس: " + _hunting_condition_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fff0a8"))
+    draw_string(ThemeDB.fallback_font, Vector2(35, 630), "المحافظة: " + selected_governorate + "   (اضغط للتغيير)", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+    draw_string(ThemeDB.fallback_font, Vector2(35, 655), "المنطقة: " + selected_area + "   (اضغط للتغيير)", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+    draw_string(ThemeDB.fallback_font, Vector2(35, 680), "القرية: " + selected_village + "   (اضغط للتغيير)", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+    draw_string(ThemeDB.fallback_font, Vector2(25, 715), "الوقت والطقس: " + _hunting_condition_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fff0a8"))
 
     draw_rect(Rect2(20, 185, 680, 55), Color("#294f32"))
     draw_string(ThemeDB.fallback_font, Vector2(35, 221), "اسم الصياد: " + hunter_name + ("  [تعديل]" if editing_name else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
