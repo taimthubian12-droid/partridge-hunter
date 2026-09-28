@@ -61,6 +61,12 @@ var mission_reward := 100
 var mission_level := 1
 var dog_search_progress := 0.0
 var dog_search_duration := 3.0
+var dog_level := 1
+var dog_xp := 0
+var dog_xp_next := 100
+var dog_upgrade_points := 0
+var dog_stats := {"speed": 1.0, "scent": 1.0, "accuracy": 0.70, "stamina": 1.0}
+var dog_upgrade_open := false
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
@@ -296,7 +302,29 @@ func _apply_mission_level():
     terrain_type = _terrain_for_area()
 
 func _dog_stat(name: String) -> float:
+    if dog_stats.has(name):
+        return float(dog_stats[name])
     return float(DOG_STATS[dog_variant - 1].get(name, 1.0))
+
+func _add_dog_xp(amount: int):
+    dog_xp += amount
+    while dog_xp >= dog_xp_next:
+        dog_xp -= dog_xp_next
+        dog_level += 1
+        dog_upgrade_points += 2
+        dog_xp_next = 100 + (dog_level - 1) * 50
+        status_text = "🐕 ارتفع مستوى الكلب إلى %d! حصلت على نقطتي تطوير" % dog_level
+
+func _upgrade_dog(stat_name: String):
+    if dog_upgrade_points <= 0:
+        status_text = "لا توجد نقاط تطوير"
+        return
+    if not dog_stats.has(stat_name):
+        return
+    dog_upgrade_points -= 1
+    dog_stats[stat_name] = float(dog_stats[stat_name]) + (0.05 if stat_name != "accuracy" else 0.03)
+    status_text = "تم تطوير %s" % stat_name
+    queue_redraw()
 
 func _start_dog_search():
     if dog_searching:
@@ -317,6 +345,7 @@ func _update_dog_search(delta):
         var roll = rng.randf()
         if roll <= _dog_stat("accuracy"):
             dog_has_found_prey = true
+            _add_dog_xp(35)
             status_text = "🐕 وجد الحجل! أصبح الهدف أسهل للرمي"
             target += Vector2(rng.randf_range(-20.0, 20.0), rng.randf_range(-15.0, 15.0))
         else:
@@ -594,6 +623,21 @@ func _unhandled_input(event):
 if p.y >= 805 and p.y < 850 and p.x < 500:
     _start_dog_search()
     return
+if p.y >= 850 and p.y < 910 and p.x < 500:
+    dog_upgrade_open = not dog_upgrade_open
+    queue_redraw()
+    return
+if dog_upgrade_open and p.y >= 910:
+    var col = int(p.x / 180.0)
+    if col == 0:
+        _upgrade_dog("scent")
+    elif col == 1:
+        _upgrade_dog("speed")
+    elif col == 2:
+        _upgrade_dog("accuracy")
+    else:
+        _upgrade_dog("stamina")
+    return
 
 if p.y >= 610 and p.y < 638:
         _open_location_menu(0)
@@ -685,6 +729,18 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(25, 790), "التضاريس: %s | الكلب: %s" % [terrain_type, ("يبحث عن الحجل" if dog_searching else "جاهز")], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#c7f9cc"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 815), "كلبك: %s  | اضغط على منطقة الكلب لتغيير السلالة" % dog_variant_names[dog_variant - 1], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 840), "السرعة %.1f | الشم %.1f | الدقة %d%%" % [_dog_stat("speed"), _dog_stat("scent"), int(_dog_stat("accuracy") * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fde68a"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 865), "🐕 مستوى %d | XP %d/%d | نقاط تطوير: %d" % [dog_level, dog_xp, dog_xp_next, dog_upgrade_points], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fef3c7"))
+    if dog_upgrade_open:
+        draw_rect(Rect2(20, 890, 680, 190), Color(0.05, 0.08, 0.12, 0.96))
+        draw_string(ThemeDB.fallback_font, Vector2(35, 920), "تطوير البونتر — نقطة لكل تطوير", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#ffffff"))
+        draw_string(ThemeDB.fallback_font, Vector2(25, 955), "👃 شم", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#ffffff"))
+        draw_string(ThemeDB.fallback_font, Vector2(190, 955), "🏃 سرعة", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#ffffff"))
+        draw_string(ThemeDB.fallback_font, Vector2(350, 955), "🎯 دقة", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#ffffff"))
+        draw_string(ThemeDB.fallback_font, Vector2(515, 955), "❤️ تحمل", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#ffffff"))
+        draw_string(ThemeDB.fallback_font, Vector2(25, 990), "%.2f" % _dog_stat("scent"), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
+        draw_string(ThemeDB.fallback_font, Vector2(190, 990), "%.2f" % _dog_stat("speed"), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
+        draw_string(ThemeDB.fallback_font, Vector2(350, 990), "%d%%" % int(_dog_stat("accuracy") * 100.0), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
+        draw_string(ThemeDB.fallback_font, Vector2(515, 990), "%.2f" % _dog_stat("stamina"), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#fde68a"))
     # Simple in-engine Pointer silhouette so the game does not depend on external image files.
     var dog_pos = Vector2(570, 835)
     draw_circle(dog_pos + Vector2(-18, 0), 14, Color("#f4f1e8"))
