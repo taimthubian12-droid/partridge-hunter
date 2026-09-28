@@ -58,6 +58,10 @@ var partridge_velocity := Vector2(0.0, 0.0)
 var mission_target := 5
 var mission_progress := 0
 var mission_reward := 100
+var mission_level := 1
+var dog_search_progress := 0.0
+var dog_search_duration := 3.0
+var terrain_type := "سهول"
 var partridge_visible := true
 var live_weather_enabled := true
 var weather_code := 0
@@ -89,6 +93,7 @@ var location_menu_open := false
 var location_level := 0
 
 func _ready():
+    _apply_mission_level()
     rng.randomize()
     _update_world_conditions()
     weather_request = HTTPRequest.new()
@@ -264,6 +269,28 @@ func _world_difficulty() -> float:
     if wind_speed >= 7.0:
         difficulty += 0.30
     return difficulty
+
+func _terrain_for_area() -> String:
+    var key = selected_governorate + "|" + selected_area
+    if key.contains("القلمون") or key.contains("تدمر") or key.contains("جبل العرب"):
+        return "جبال وهضاب"
+    if key.contains("الغاب") or key.contains("الحفة") or key.contains("جسر الشغور"):
+        return "غابات وأودية"
+    if key.contains("الميادين") or key.contains("البوكمال") or key.contains("الطبقة"):
+        return "سهول نهرية"
+    return "سهول"
+
+func _apply_mission_level():
+    mission_target = 4 + mission_level
+    mission_reward = 100 + mission_level * 50
+    dog_search_duration = maxf(1.5, 3.5 - mission_level * 0.15)
+    terrain_type = _terrain_for_area()
+
+func _advance_mission():
+    mission_level += 1
+    mission_progress = 0
+    _apply_mission_level()
+    status_text = "المرحلة %d بدأت — %s" % [mission_level, terrain_type]
 
 func _update_partridge_behavior():
     partridge_visible = daylight
@@ -444,8 +471,8 @@ func _fire_at(point: Vector2):
         mission_progress += 1
         if mission_progress >= mission_target:
             score += mission_reward
-            status_text = "اكتملت المهمة! مكافأة %d نقطة" % mission_reward
-            mission_progress = 0
+            status_text = "اكتملت المرحلة! مكافأة %d نقطة" % mission_reward
+            _advance_mission()
         target = _new_target()
         dog_has_found_prey = false
         status_text = "إصابة! أطلق النار على الطريدة التالية"
@@ -604,7 +631,8 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(35, 680), "القرية: " + selected_village + "   (اضغط للتغيير)", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(25, 715), "الوقت والطقس: " + _hunting_condition_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fff0a8"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 740), "تأثير الظروف على الصيد: %.2fx" % _world_difficulty(), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#d9f99d"))
-    draw_string(ThemeDB.fallback_font, Vector2(25, 765), "المهمة: %s — %d/%d | المكافأة: %d نقطة" % [selected_village, mission_progress, mission_target, mission_reward], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffe08a"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 765), "المرحلة %d | المهمة: %s — %d/%d | المكافأة: %d" % [mission_level, selected_village, mission_progress, mission_target, mission_reward], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffe08a"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 790), "التضاريس: %s | الكلب: %s" % [terrain_type, ("يبحث عن الحجل" if dog_searching else "جاهز")], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#c7f9cc"))
     # Mini map: visual position of the selected hunting area.
     draw_rect(Rect2(470, 755, 225, 145), Color("#183b2a"))
     draw_rect(Rect2(480, 765, 205, 125), Color("#28563a"))
