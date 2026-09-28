@@ -914,6 +914,12 @@ func _unhandled_input(event):
 
     var p = event.position
 
+    if hunter_profile_open:
+        if p.y < 120:
+            hunter_profile_open = false
+            queue_redraw()
+        return
+
     # Full-screen mobile location picker.
     if location_menu_open:
         if p.x >= 600 and p.y < 100:
@@ -941,6 +947,11 @@ func _unhandled_input(event):
                 location_level -= 1
                 queue_redraw()
             return
+        return
+
+    if p.y >= 540 and p.y < 605:
+        hunter_profile_open = true
+        queue_redraw()
         return
 
     # Hunting location selectors: governorate, area, village.
