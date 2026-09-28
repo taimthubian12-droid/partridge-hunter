@@ -8,6 +8,10 @@ const MAX_PLAYERS := 8
 
 var score := 0
 var ammo := 8
+var shots_fired := 0
+var hits := 0
+var streak := 0
+var best_streak := 0
 var hunter_name := "صياد"
 var selected_shell := 12
 var target := Vector2(360, 620)
@@ -168,13 +172,27 @@ func _fire_at(point: Vector2):
         return
     ammo -= 1
     if point.distance_to(target) < 75:
-        score += 10 + (20 - selected_shell)
+        shots_fired += 1
+        hits += 1
+        streak += 1
+        best_streak = maxi(best_streak, streak)
+        var shell_bonus := 0
+        if selected_shell == 12:
+            shell_bonus = 8
+        elif selected_shell == 16:
+            shell_bonus = 5
+        else:
+            shell_bonus = 2
+        var streak_bonus := mini(streak * 2, 20)
+        score += 10 + shell_bonus + streak_bonus
         target = _new_target()
         dog_has_found_prey = false
         status_text = "إصابة! أطلق النار على الطريدة التالية"
         _sync_local_player()
     else:
-        status_text = "لم تصب الهدف"
+        shots_fired += 1
+        streak = 0
+        status_text = "لم تصب الهدف — بدأت سلسلة جديدة"
     queue_redraw()
 
 func _unhandled_input(event):
@@ -237,6 +255,8 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(25, 85), "صيد الحجل - Multiplayer", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color("#d9f99d"))
     draw_string(ThemeDB.fallback_font, Vector2(500, 45), "النقاط: " + str(score), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(500, 80), "الطلقات: " + str(ammo), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#ffe08a"))
+    var accuracy := 0.0 if shots_fired == 0 else (float(hits) / float(shots_fired)) * 100.0
+    draw_string(ThemeDB.fallback_font, Vector2(25, 575), "الدقة: %d%%   السلسلة: %d   أفضل سلسلة: %d" % [roundi(accuracy), streak, best_streak], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fff0a8"))
 
     draw_rect(Rect2(20, 185, 680, 55), Color("#294f32"))
     draw_string(ThemeDB.fallback_font, Vector2(35, 221), "اسم الصياد: " + hunter_name + ("  [تعديل]" if editing_name else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
