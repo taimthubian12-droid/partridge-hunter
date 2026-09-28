@@ -1064,8 +1064,8 @@ func _unhandled_input(event):
     if start_menu_open:
         draw_rect(Rect2(0, 0, 720, 1280), Color("#0b1d14"))
         draw_rect(Rect2(20, 25, 680, 500), Color("#173f2b"))
-        draw_string(ThemeDB.fallback_font, Vector2(45, 85), "PARTRIDGE HUNTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 34, Color.WHITE)
-        draw_string(ThemeDB.fallback_font, Vector2(45, 125), "صيد الحجل", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color("#d9f99d"))
+        draw_string(ThemeDB.fallback_font, Vector2(45, 85), "رحلة صيد", HORIZONTAL_ALIGNMENT_LEFT, -1, 34, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(45, 125), "استكشاف وتتبع الطرائد", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color("#d9f99d"))
         draw_string(ThemeDB.fallback_font, Vector2(45, 175), "ابدأ جولتك واختر طريقة اللعب", HORIZONTAL_ALIGNMENT_LEFT, -1, 21, Color("#fff0a8"))
         draw_string(ThemeDB.fallback_font, Vector2(45, 225), "🏅 %s — المستوى %d" % [hunter_rank, hunter_level], HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("#bfdbfe"))
         draw_string(ThemeDB.fallback_font, Vector2(45, 265), "🪙 %d عملة   |   🐕 %s" % [dog_coins, dog_variant_names[dog_variant - 1]], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#fde68a"))
