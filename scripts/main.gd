@@ -60,15 +60,15 @@ var daylight := true
 # Representative coordinates for the selected gameplay area.
 # Weather is fetched for the area; the village remains the player-facing sub-location.
 const AREA_COORDINATES := {
-    "الغوطة": Vector2(33.55, 36.35), "القلمون": Vector2(33.80, 36.55), "الزبداني": Vector2(33.72, 36.10),
-    "تدمر": Vector2(34.56, 38.28), "الريف الغربي": Vector2(34.75, 36.55), "مصياف": Vector2(35.07, 36.34),
-    "الغاب": Vector2(35.45, 36.40), "جبلة": Vector2(35.36, 35.93), "الحفة": Vector2(35.60, 36.05),
-    "صافيتا": Vector2(34.82, 36.12), "بانياس": Vector2(35.18, 35.95), "عفرين": Vector2(36.51, 36.87),
-    "الريف الشمالي": Vector2(36.55, 37.15), "جسر الشغور": Vector2(35.82, 36.32), "معرة النعمان": Vector2(35.65, 36.67),
-    "تل أبيض": Vector2(36.70, 38.95), "الطبقة": Vector2(35.84, 38.55), "الميادين": Vector2(35.02, 40.45),
-    "البوكمال": Vector2(34.45, 40.92), "القامشلي": Vector2(37.05, 41.23), "المالكية": Vector2(37.18, 42.13),
-    "الريف الغربي": Vector2(32.62, 36.00), "الريف الشرقي": Vector2(32.70, 36.25), "ريف القنيطرة": Vector2(33.00, 35.95),
-    "جبل العرب": Vector2(32.70, 36.55)
+    "دمشق|الغوطة": Vector2(33.55, 36.35), "ريف دمشق|القلمون": Vector2(33.80, 36.55), "ريف دمشق|الزبداني": Vector2(33.72, 36.10),
+    "حمص|تدمر": Vector2(34.56, 38.28), "حمص|الريف الغربي": Vector2(34.75, 36.55), "حماة|مصياف": Vector2(35.07, 36.34),
+    "حماة|الغاب": Vector2(35.45, 36.40), "اللاذقية|جبلة": Vector2(35.36, 35.93), "اللاذقية|الحفة": Vector2(35.60, 36.05),
+    "طرطوس|صافيتا": Vector2(34.82, 36.12), "طرطوس|بانياس": Vector2(35.18, 35.95), "حلب|عفرين": Vector2(36.51, 36.87),
+    "حلب|الريف الشمالي": Vector2(36.55, 37.15), "إدلب|جسر الشغور": Vector2(35.82, 36.32), "إدلب|معرة النعمان": Vector2(35.65, 36.67),
+    "الرقة|تل أبيض": Vector2(36.70, 38.95), "الرقة|الطبقة": Vector2(35.84, 38.55), "دير الزور|الميادين": Vector2(35.02, 40.45),
+    "دير الزور|البوكمال": Vector2(34.45, 40.92), "الحسكة|القامشلي": Vector2(37.05, 41.23), "الحسكة|المالكية": Vector2(37.18, 42.13),
+    "درعا|الريف الغربي": Vector2(32.62, 36.00), "درعا|الريف الشرقي": Vector2(32.70, 36.25), "القنيطرة|ريف القنيطرة": Vector2(33.00, 35.95),
+    "السويداء|جبل العرب": Vector2(32.70, 36.55)
 }
 
 var peer: ENetMultiplayerPeer
@@ -136,7 +136,7 @@ func select_village(name: String):
 func _request_live_weather():
     if not live_weather_enabled or weather_request == null:
         return
-    var coords = AREA_COORDINATES.get(selected_area, Vector2(33.51, 36.29))
+    var coords = AREA_COORDINATES.get(selected_governorate + "|" + selected_area, Vector2(33.51, 36.29))
     var url = "https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code,wind_speed_10m,precipitation&daily=sunrise,sunset&timezone=auto" % [str(coords.x), str(coords.y)]
     var err = weather_request.request(url)
     if err != OK:
