@@ -67,6 +67,11 @@ var dog_xp_next := 100
 var dog_upgrade_points := 0
 var dog_stats := {"speed": 1.0, "scent": 1.0, "accuracy": 0.70, "stamina": 1.0}
 var dog_upgrade_open := false
+var kennel_open := false
+var dog_coins := 1200
+var owned_dogs := [true, false, false, false, false]
+var dog_profiles := []
+var dog_unlock_costs := [0, 400, 700, 1000, 1500]
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
@@ -108,6 +113,8 @@ var location_menu_open := false
 var location_level := 0
 
 func _ready():
+    _init_dog_profiles()
+    _load_dog_profiles()
     _apply_mission_level()
     rng.randomize()
     _update_world_conditions()
@@ -300,6 +307,84 @@ func _apply_mission_level():
     mission_reward = 100 + mission_level * 50
     dog_search_duration = maxf(1.5, 3.5 - mission_level * 0.15)
     terrain_type = _terrain_for_area()
+
+func _init_dog_profiles():
+    dog_profiles.clear()
+    for i in range(DOG_STATS.size()):
+        dog_profiles.append({"level": 1, "xp": 0, "xp_next": 100, "points": 0, "stats": DOG_STATS[i].duplicate()})
+
+func _active_profile() -> Dictionary:
+    if dog_profiles.size() == 0:
+        _init_dog_profiles()
+    return dog_profiles[dog_variant - 1]
+
+func _sync_active_profile():
+    var p = _active_profile()
+    dog_level = int(p["level"])
+    dog_xp = int(p["xp"])
+    dog_xp_next = int(p["xp_next"])
+    dog_upgrade_points = int(p["points"])
+    dog_stats = p["stats"].duplicate()
+
+func _store_active_profile():
+    var p = _active_profile()
+    p["level"] = dog_level
+    p["xp"] = dog_xp
+    p["xp_next"] = dog_xp_next
+    p["points"] = dog_upgrade_points
+    p["stats"] = dog_stats.duplicate()
+    dog_profiles[dog_variant - 1] = p
+
+func _save_dog_profiles():
+    _store_active_profile()
+    var cfg = ConfigFile.new()
+    cfg.set_value("kennel", "owned", owned_dogs)
+    cfg.set_value("kennel", "coins", dog_coins)
+    cfg.set_value("kennel", "profiles", dog_profiles)
+    cfg.set_value("kennel", "active", dog_variant)
+    cfg.save("user://kennel.cfg")
+
+func _load_dog_profiles():
+    var cfg = ConfigFile.new()
+    if cfg.load("user://kennel.cfg") != OK:
+        _sync_active_profile()
+        return
+    owned_dogs = cfg.get_value("kennel", "owned", owned_dogs)
+    dog_coins = int(cfg.get_value("kennel", "coins", dog_coins))
+    var saved = cfg.get_value("kennel", "profiles", dog_profiles)
+    if saved is Array and saved.size() == DOG_STATS.size():
+        dog_profiles = saved
+    dog_variant = clampi(int(cfg.get_value("kennel", "active", dog_variant)), 1, DOG_STATS.size())
+    _sync_active_profile()
+
+func _buy_or_select_dog(index: int):
+    if index < 0 or index >= owned_dogs.size():
+        return
+    if owned_dogs[index]:
+        dog_variant = index + 1
+        _sync_active_profile()
+        kennel_open = false
+        status_text = "تم اختيار %s" % dog_variant_names[index]
+        _save_dog_profiles()
+        queue_redraw()
+        return
+    var cost = dog_unlock_costs[index]
+    if dog_coins >= cost:
+        dog_coins -= cost
+        owned_dogs[index] = true
+        dog_variant = index + 1
+        _sync_active_profile()
+        kennel_open = false
+        status_text = "تم فتح %s مقابل %d عملة" % [dog_variant_names[index], cost]
+        _save_dog_profiles()
+    else:
+        status_text = "تحتاج إلى %d عملة لفتح هذا الكلب" % cost
+    queue_redraw()
+
+func _open_kennel():
+    kennel_open = true
+    dog_upgrade_open = false
+    queue_redraw()
 
 func _dog_stat(name: String) -> float:
     if dog_stats.has(name):
