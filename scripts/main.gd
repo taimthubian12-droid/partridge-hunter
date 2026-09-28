@@ -672,8 +672,8 @@ func _fire_at(point: Vector2):
         mission_progress += 1
         if mission_progress >= mission_target:
             score += mission_reward
-            dog_coins += mission_reward / 10
-            status_text = "اكتملت المرحلة! +%d نقطة و+%d عملة" % [mission_reward, mission_reward / 10]
+            dog_coins += int(mission_reward / 10)
+            status_text = "اكتملت المرحلة! +%d نقطة و+%d عملة" % [mission_reward, int(mission_reward / 10)]
             _save_dog_profiles()
             _advance_mission()
         target = _new_target()
