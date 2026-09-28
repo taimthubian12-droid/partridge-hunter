@@ -996,7 +996,12 @@ func _fire_at(point: Vector2):
     round_shots += 1
     if hunting_mode == 2:
         challenge_ammo = maxi(0, challenge_ammo - 1)
-    if point.distance_to(target) < prey_radius * 1.55:
+    var aim_error = point.distance_to(target)
+    var range_factor = clampf(1.0 - Vector2(360.0, 620.0).distance_to(target) / 650.0, 0.48, 1.0)
+    var speed_factor = clampf(1.0 - partridge_velocity.length() / 260.0, 0.48, 1.0)
+    var shell_factor = 1.18 if selected_shell == 12 else (1.0 if selected_shell == 16 else 0.84)
+    var precision_window = prey_radius * 1.55 * range_factor * speed_factor * shell_factor
+    if aim_error <= precision_window:
         shots_fired += 1
         hits += 1
         streak += 1
