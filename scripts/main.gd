@@ -62,6 +62,8 @@ var mission_level := 1
 var dog_search_progress := 0.0
 var dog_search_duration := 3.0
 var terrain_type := "سهول"
+var dog_variant := 1
+var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
 var partridge_visible := true
 var live_weather_enabled := true
 var weather_code := 0
@@ -545,7 +547,15 @@ func _unhandled_input(event):
         return
 
     # Hunting location selectors: governorate, area, village.
-    if p.y >= 610 and p.y < 638:
+    if p.x >= 520 and p.x <= 700 and p.y >= 805 and p.y <= 900:
+    dog_variant += 1
+    if dog_variant > dog_variant_names.size():
+        dog_variant = 1
+    status_text = "تم اختيار %s" % dog_variant_names[dog_variant - 1]
+    queue_redraw()
+    return
+
+if p.y >= 610 and p.y < 638:
         _open_location_menu(0)
         return
     if p.y >= 638 and p.y < 665:
@@ -633,6 +643,15 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(25, 740), "تأثير الظروف على الصيد: %.2fx" % _world_difficulty(), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#d9f99d"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 765), "المرحلة %d | المهمة: %s — %d/%d | المكافأة: %d" % [mission_level, selected_village, mission_progress, mission_target, mission_reward], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffe08a"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 790), "التضاريس: %s | الكلب: %s" % [terrain_type, ("يبحث عن الحجل" if dog_searching else "جاهز")], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#c7f9cc"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 815), "كلبك: %s  | اضغط على منطقة الكلب لتغيير السلالة" % dog_variant_names[dog_variant - 1], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
+    # Simple in-engine Pointer silhouette so the game does not depend on external image files.
+    var dog_pos = Vector2(570, 835)
+    draw_circle(dog_pos + Vector2(-18, 0), 14, Color("#f4f1e8"))
+    draw_circle(dog_pos + Vector2(-28, -5), 8, Color("#2b2522") if dog_variant % 2 == 0 else Color("#8a4b2a"))
+    draw_line(dog_pos + Vector2(-4, 2), dog_pos + Vector2(24, 2), Color("#f4f1e8"), 7)
+    draw_line(dog_pos + Vector2(15, 2), dog_pos + Vector2(25, -14), Color("#f4f1e8"), 4)
+    draw_line(dog_pos + Vector2(2, 5), dog_pos + Vector2(-2, 20), Color("#f4f1e8"), 4)
+    draw_line(dog_pos + Vector2(15, 5), dog_pos + Vector2(12, 22), Color("#f4f1e8"), 4)
     # Mini map: visual position of the selected hunting area.
     draw_rect(Rect2(470, 755, 225, 145), Color("#183b2a"))
     draw_rect(Rect2(480, 765, 205, 125), Color("#28563a"))
