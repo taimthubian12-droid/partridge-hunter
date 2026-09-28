@@ -54,6 +54,10 @@ var weather_refresh_seconds := 900.0
 var weather_refresh_timer := 0.0
 var weather_request_busy := false
 var partridge_speed := 1.0
+var partridge_velocity := Vector2(0.0, 0.0)
+var mission_target := 5
+var mission_progress := 0
+var mission_reward := 100
 var partridge_visible := true
 var live_weather_enabled := true
 var weather_code := 0
@@ -271,6 +275,8 @@ func _update_partridge_behavior():
     if wind_speed >= 7.0:
         partridge_speed += 0.15
     partridge_speed = clampf(partridge_speed, 0.75, 1.5)
+    var phase = Time.get_ticks_msec() / 1000.0
+    partridge_velocity = Vector2(cos(phase * partridge_speed * 1.7), sin(phase * partridge_speed * 1.2)) * (28.0 * partridge_speed)
 
 func _hunting_condition_text() -> String:
     var period = "فجر" if game_hour < 7.0 else ("صباح" if game_hour < 12.0 else ("بعد الظهر" if game_hour < 17.0 else ("غروب" if game_hour < 20.0 else "ليل")))
@@ -435,6 +441,11 @@ func _fire_at(point: Vector2):
             shell_bonus = 2
         var streak_bonus := mini(streak * 2, 20)
         score += 10 + shell_bonus + streak_bonus
+        mission_progress += 1
+        if mission_progress >= mission_target:
+            score += mission_reward
+            status_text = "اكتملت المهمة! مكافأة %d نقطة" % mission_reward
+            mission_progress = 0
         target = _new_target()
         dog_has_found_prey = false
         status_text = "إصابة! أطلق النار على الطريدة التالية"
@@ -453,6 +464,10 @@ func _process(delta):
     if not live_weather_enabled or weather_updated_at.is_empty():
         _update_world_conditions()
     _update_partridge_behavior()
+    if partridge_visible and not location_menu_open:
+        target += partridge_velocity * delta
+        target.x = clampf(target.x, 55.0, 665.0)
+        target.y = clampf(target.y, 285.0, 600.0)
     queue_redraw()
 
 func _unhandled_input(event):
