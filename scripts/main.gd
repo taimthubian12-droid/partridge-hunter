@@ -1271,7 +1271,7 @@ func _draw():
     draw_rect(Rect2(0, 0, 720, 175), Color("#79b7d9"))
     draw_rect(Rect2(0, 0, 720, 110), Color("#173f2b"))
 
-    draw_string(ThemeDB.fallback_font, Vector2(25, 45), "PARTRIDGE HUNTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color.WHITE)
+    draw_string(ThemeDB.fallback_font, Vector2(25, 45), "رحلة صيد", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(25, 85), "صيد الحجل - Multiplayer", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color("#d9f99d"))
     draw_string(ThemeDB.fallback_font, Vector2(500, 45), "النقاط: " + str(score), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(500, 80), "الطلقات: " + str(ammo), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#ffe08a"))
@@ -1293,7 +1293,7 @@ func _draw():
     draw_rect(Rect2(20, 555, 680 * round_progress, 10), Color("#d9f99d"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 765), "المرحلة %d | المهمة: %s — %d/%d | المكافأة: %d" % [mission_level, selected_village, mission_progress, mission_target, mission_reward], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffe08a"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 790), "التضاريس: %s | الأثر: %s | الطريدة: %s | الكلب: %s" % [terrain_type, track_type, ("مكشوفة" if prey_revealed else "مجهولة"), ("يتتبع الأثر" if dog_searching else "جاهز")], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#c7f9cc"))
-    draw_string(ThemeDB.fallback_font, Vector2(25, 815), "الخطر: %d/3 | %s | كلبك: %s  | اضغط على منطقة الكلب لتغيير السلالة" % dog_variant_names[dog_variant - 1], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
+    draw_string(ThemeDB.fallback_font, Vector2(25, 815), "الخطر: %d/3 | %s | كلبك: %s  | اضغط على منطقة الكلب لتغيير السلالة" % [prey_danger_level, ("طريدة مجهولة" if not prey_revealed else prey_species), dog_variant_names[dog_variant - 1]], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dbeafe"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 840), "الطلقات في الجولة: %d | النمط: %s" % [round_shots, hunting_mode_names[hunting_mode]], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#dbeafe"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 865), "السرعة %.1f | الشم %.1f | الدقة %d%%" % [_dog_stat("speed"), _dog_stat("scent"), int(_dog_stat("accuracy") * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fde68a"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 890), "🐕 مستوى %d | XP %d/%d | نقاط تطوير: %d" % [dog_level, dog_xp, dog_xp_next, dog_upgrade_points], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#fef3c7"))
