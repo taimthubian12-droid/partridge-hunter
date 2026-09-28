@@ -743,7 +743,11 @@ func _update_partridge_behavior():
         partridge_speed -= 0.10
     if wind_speed >= 7.0:
         partridge_speed += 0.15
-    partridge_speed = clampf(partridge_speed, 0.75, 1.5)
+    if hunting_mode == 1:
+        partridge_speed += 0.10
+    elif hunting_mode == 2:
+        partridge_speed += 0.25
+    partridge_speed = clampf(partridge_speed, 0.75, 1.75)
     var phase = Time.get_ticks_msec() / 1000.0
     partridge_velocity = Vector2(cos(phase * partridge_speed * 1.7), sin(phase * partridge_speed * 1.2)) * (28.0 * partridge_speed)
 
@@ -890,12 +894,18 @@ func _fire_at(point: Vector2):
         status_text = "الوقت ليلي — عُد في وقت نشاط الحجل"
         queue_redraw()
         return
+    if hunting_mode == 2 and challenge_ammo <= 0:
+        status_text = "انتهت طلقات التحدي — افتح القائمة وابدأ تحدياً جديداً"
+        queue_redraw()
+        return
     if ammo <= 0:
         ammo = 8
         status_text = "تمت إعادة تعبئة الخرطوش"
         queue_redraw()
         return
     ammo -= 1
+    if hunting_mode == 2:
+        challenge_ammo = maxi(0, challenge_ammo - 1)
     if point.distance_to(target) < 75:
         shots_fired += 1
         hits += 1
@@ -1219,6 +1229,9 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(500, 45), "النقاط: " + str(score), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(500, 80), "الطلقات: " + str(ammo), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#ffe08a"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 105), "🪙 الرصيد: %d عملة" % dog_coins, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fde68a"))
+    draw_string(ThemeDB.fallback_font, Vector2(255, 135), "النمط: %s" % hunting_mode_names[hunting_mode], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#fff0a8"))
+    if hunting_mode == 2:
+        draw_string(ThemeDB.fallback_font, Vector2(480, 135), "🔥 طلقات التحدي: %d" % challenge_ammo, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffd166"))
     draw_string(ThemeDB.fallback_font, Vector2(500, 105), "🏅 %s Lv.%d" % [hunter_rank, hunter_level], HORIZONTAL_ALIGNMENT_LEFT, 195, 16, Color("#bfdbfe"))
     var accuracy := 0.0 if shots_fired == 0 else (float(hits) / float(shots_fired)) * 100.0
     draw_string(ThemeDB.fallback_font, Vector2(25, 575), "الدقة: %d%%   السلسلة: %d   أفضل سلسلة: %d" % [roundi(accuracy), streak, best_streak], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fff0a8"))
