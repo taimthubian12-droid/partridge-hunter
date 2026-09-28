@@ -81,6 +81,8 @@ var status_text := "جاهز — أنشئ غرفة أو انضم إليها"
 var host_ip := "192.168.1.2"
 var players: Dictionary = {}
 var editing_name := false
+var location_menu_open := false
+var location_level := 0
 
 func _ready():
     rng.randomize()
@@ -98,6 +100,25 @@ func _ready():
     players[multiplayer.get_unique_id()] = {"name": hunter_name, "score": score}
     queue_redraw()
 
+
+func _location_options() -> Array:
+    if location_level == 0:
+        return _governorates()
+    if location_level == 1:
+        return _areas()
+    return _villages()
+
+func _location_title() -> String:
+    if location_level == 0:
+        return "اختر المحافظة"
+    if location_level == 1:
+        return "اختر المنطقة — " + selected_governorate
+    return "اختر القرية — " + selected_area
+
+func _open_location_menu(level: int):
+    location_menu_open = true
+    location_level = level
+    queue_redraw()
 
 func _governorates() -> Array:
     return SYRIA_HUNTING_ZONES.keys()
@@ -452,19 +473,50 @@ func _unhandled_input(event):
 
     var p = event.position
 
+    # Full-screen mobile location picker.
+    if location_menu_open:
+        if p.x >= 600 and p.y < 100:
+            location_menu_open = false
+            queue_redraw()
+            return
+        if p.y >= 125 and p.y < 965:
+            var options = _location_options()
+            var index = int((p.y - 125) / 70.0)
+            if index >= 0 and index < options.size():
+                var chosen = str(options[index])
+                if location_level == 0:
+                    select_governorate(chosen)
+                    location_level = 1
+                elif location_level == 1:
+                    select_area(chosen)
+                    location_level = 2
+                else:
+                    select_village(chosen)
+                    location_menu_open = false
+                queue_redraw()
+            return
+        if p.y >= 1000 and p.y < 1080:
+            if location_level > 0:
+                location_level -= 1
+                queue_redraw()
+            return
+        return
+
     # Hunting location selectors: governorate, area, village.
     if p.y >= 610 and p.y < 638:
-        var gs = _governorates()
-        var gi = gs.find(selected_governorate)
-        select_governorate(gs[(gi + 1) % gs.size()])
+        _open_location_menu(0)
         return
     if p.y >= 638 and p.y < 665:
+        _open_location_menu(1)
+        return
         var areas = _areas()
         if areas.size() > 0:
             var ai = areas.find(selected_area)
             select_area(areas[(ai + 1) % areas.size()])
         return
     if p.y >= 665 and p.y < 690:
+        _open_location_menu(2)
+        return
         var villages = _villages()
         if villages.size() > 0:
             var vi = villages.find(selected_village)
@@ -505,6 +557,22 @@ func _unhandled_input(event):
     _fire_at(p)
 
 func _draw():
+    if location_menu_open:
+        draw_rect(Rect2(0, 0, 720, 1280), Color("#10251a"))
+        draw_rect(Rect2(20, 20, 680, 80), Color("#315d39"))
+        draw_string(ThemeDB.fallback_font, Vector2(40, 70), _location_title(), HORIZONTAL_ALIGNMENT_LEFT, -1, 27, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(635, 70), "×", HORIZONTAL_ALIGNMENT_LEFT, -1, 35, Color("#ffe08a"))
+        var options = _location_options()
+        for i in range(options.size()):
+            if i >= 12:
+                break
+            var yy = 125 + i * 70
+            draw_rect(Rect2(25, yy, 670, 58), Color("#294f32"))
+            draw_string(ThemeDB.fallback_font, Vector2(45, yy + 38), str(options[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(35, 1040), "رجوع", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#d9f99d"))
+        draw_string(ThemeDB.fallback_font, Vector2(35, 1085), "المحافظة ← المنطقة ← القرية", HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fff0a8"))
+        return
+
     draw_rect(Rect2(0, 0, 720, 1280), Color("#76ad5d"))
     draw_rect(Rect2(0, 0, 720, 175), Color("#79b7d9"))
     draw_rect(Rect2(0, 0, 720, 110), Color("#173f2b"))
