@@ -1133,6 +1133,7 @@ func _draw():
     draw_string(ThemeDB.fallback_font, Vector2(500, 45), "النقاط: " + str(score), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(500, 80), "الطلقات: " + str(ammo), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#ffe08a"))
     draw_string(ThemeDB.fallback_font, Vector2(25, 105), "🪙 الرصيد: %d عملة" % dog_coins, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fde68a"))
+    draw_string(ThemeDB.fallback_font, Vector2(500, 105), "🏅 %s Lv.%d" % [hunter_rank, hunter_level], HORIZONTAL_ALIGNMENT_LEFT, 195, 16, Color("#bfdbfe"))
     var accuracy := 0.0 if shots_fired == 0 else (float(hits) / float(shots_fired)) * 100.0
     draw_string(ThemeDB.fallback_font, Vector2(25, 575), "الدقة: %d%%   السلسلة: %d   أفضل سلسلة: %d" % [roundi(accuracy), streak, best_streak], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("#fff0a8"))
     draw_rect(Rect2(20, 610, 680, 78), Color("#315d39"))
