@@ -78,6 +78,9 @@ var owned_items := [false, false, false, false]
 var equipped_items := [false, false, false, false]
 var daily_reward_claimed_date := ""
 var daily_reward_amount := 250
+var reward_chest_count := 0
+var total_coins_earned := 0
+var last_hunt_reward := 0
 var terrain_type := "سهول"
 var dog_variant := 1
 var dog_variant_names := ["بونتر أبيض وبني", "بونتر أسود وأبيض", "بونتر بني", "بونتر سريع", "بونتر مرقّط"]
@@ -351,6 +354,8 @@ func _save_dog_profiles():
     cfg.set_value("shop", "owned_items", owned_items)
     cfg.set_value("shop", "equipped_items", equipped_items)
     cfg.set_value("rewards", "daily_claimed_date", daily_reward_claimed_date)
+    cfg.set_value("rewards", "chests", reward_chest_count)
+    cfg.set_value("rewards", "total_earned", total_coins_earned)
     cfg.save("user://kennel.cfg")
 
 func _load_dog_profiles():
@@ -369,6 +374,8 @@ func _load_dog_profiles():
     if not (equipped_items is Array) or equipped_items.size() != shop_items.size():
         equipped_items = [false, false, false, false]
     daily_reward_claimed_date = str(cfg.get_value("rewards", "daily_claimed_date", daily_reward_claimed_date))
+    reward_chest_count = maxi(0, int(cfg.get_value("rewards", "chests", reward_chest_count)))
+    total_coins_earned = maxi(0, int(cfg.get_value("rewards", "total_earned", total_coins_earned)))
     _sync_active_profile()
 
 func _buy_or_select_dog(index: int):
@@ -436,6 +443,37 @@ func _toggle_shop_item(index: int):
 func _today_key() -> String:
     var d = Time.get_date_dict_from_system()
     return "%04d-%02d-%02d" % [int(d.year), int(d.month), int(d.day)]
+
+func _hunt_coin_reward() -> int:
+    var accuracy := 0.0 if shots_fired == 0 else float(hits) / float(shots_fired)
+    var base := 12 + mission_level * 3
+    var streak_bonus := mini(streak * 2, 30)
+    var accuracy_bonus := roundi(accuracy * 15.0)
+    var condition_bonus := maxi(0, 8 - roundi((_world_difficulty() - 1.0) * 8.0))
+    return maxi(5, base + streak_bonus + accuracy_bonus + condition_bonus)
+
+func _grant_hunt_reward():
+    last_hunt_reward = _hunt_coin_reward()
+    dog_coins += last_hunt_reward
+    total_coins_earned += last_hunt_reward
+    if streak > 0 and streak % 5 == 0:
+        reward_chest_count += 1
+        status_text = "🎁 صندوق مكافأة جديد! +%d عملة" % last_hunt_reward
+    else:
+        status_text = "إصابة ناجحة: +%d عملة" % last_hunt_reward
+    _save_dog_profiles()
+
+func _open_reward_chest():
+    if reward_chest_count <= 0:
+        status_text = "لا يوجد صندوق مكافأة متاح"
+        return
+    reward_chest_count -= 1
+    var chest_reward = rng.randi_range(80, 220) + mission_level * 15
+    dog_coins += chest_reward
+    total_coins_earned += chest_reward
+    status_text = "🎁 فتحت الصندوق وحصلت على +%d عملة" % chest_reward
+    _save_dog_profiles()
+    queue_redraw()
 
 func _claim_daily_reward():
     var today = _today_key()
@@ -693,6 +731,7 @@ func _fire_at(point: Vector2):
         var streak_bonus := mini(streak * 2, 20)
         score += 10 + shell_bonus + streak_bonus
         mission_progress += 1
+        _grant_hunt_reward()
         if mission_progress >= mission_target:
             score += mission_reward
             dog_coins += int(mission_reward / 10)
@@ -810,6 +849,9 @@ if p.y >= 980 and p.y < 1040:
     return
 if p.y >= 1040 and p.y < 1090:
     _claim_daily_reward()
+    return
+if p.y >= 1090 and p.y < 1140:
+    _open_reward_chest()
     return
 
 if p.y >= 805 and p.y < 850 and p.x < 500:
