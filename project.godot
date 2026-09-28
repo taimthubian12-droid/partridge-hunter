@@ -1,5 +1,5 @@
 [application]
-config/name="Partridge Hunter"
+config/name="رحلة صيد"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 
