@@ -717,6 +717,25 @@ func _upgrade_dog(stat_name: String):
     status_text = "تم تطوير %s" % stat_name
     queue_redraw()
 
+func _draw_track_clues():
+    if prey_revealed:
+        return
+    var visible_clues = mini(track_clues_found, 4)
+    for i in range(visible_clues):
+        var distance = 75.0 + float(i) * 55.0
+        var wobble = sin(float(i) * 2.1) * 24.0
+        var pos = target - track_direction * distance + track_direction.rotated(PI / 2.0) * wobble
+        if prey_species in ["الأرنب البري", "الذئب", "الضبع"]:
+            draw_circle(pos, 8.0, Color("#c9b08a"))
+            draw_circle(pos + track_direction.rotated(PI / 2.0) * 9.0, 5.0, Color("#8b7355"))
+        else:
+            draw_line(pos - track_direction * 10.0, pos + track_direction * 10.0, Color("#e5d9a6"), 4.0)
+            draw_circle(pos, 3.0, Color("#fff4b8"))
+    if track_clues_found > 0:
+        var arrow_start = target - track_direction * 25.0
+        var arrow_end = arrow_start + track_direction * 65.0
+        draw_line(arrow_start, arrow_end, Color("#d9f99d"), 5.0)
+
 func _inspect_track():
     if prey_revealed:
         status_text = "الطريدة مكشوفة بالفعل"
@@ -1258,6 +1277,7 @@ func _map_position_for_area() -> Vector2:
     return Vector2(clampf(x, 490.0, 680.0), clampf(y, 775.0, 875.0))
 
 func _draw():
+    _draw_track_clues()
     if location_menu_open:
         draw_rect(Rect2(0, 0, 720, 1280), Color("#10251a"))
         draw_rect(Rect2(20, 20, 680, 80), Color("#315d39"))
