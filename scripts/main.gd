@@ -934,8 +934,11 @@ func _fire_at(point: Vector2):
         status_text = "الوقت ليلي — عُد في وقت نشاط الحجل"
         queue_redraw()
         return
+    if not prey_revealed:
+        status_text = "لا تطلق الآن — اتبع الأثر أو أرسل كلب الصيد لكشف الطريدة"
+        queue_redraw()
+        return
     if hunting_mode == 2 and challenge_ammo <= 0:
-        status_text = "انتهت طلقات التحدي — افتح القائمة وابدأ تحدياً جديداً"
         queue_redraw()
         return
     if ammo <= 0:
