@@ -615,8 +615,7 @@ func _check_hunter_achievements():
     for i in range(4):
         if unlocked[i] and not hunter_achievements[i]:
             hunter_achievements[i] = true
-            dog_coins += rewards[i]
-            total_coins_earned += rewards[i]
+            _credit_coins(rewards[i], "مكافأة إنجاز")
             status_text = "إنجاز جديد! +%d عملة" % rewards[i]
     _save_dog_profiles()
 
@@ -671,8 +670,7 @@ func _hunt_coin_reward() -> int:
 func _grant_hunt_reward()
         _update_activity_missions():
     last_hunt_reward = _hunt_coin_reward()
-    dog_coins += last_hunt_reward
-    total_coins_earned += last_hunt_reward
+    _credit_coins(last_hunt_reward, "مكافأة صيد")
     if streak > 0 and streak % 5 == 0:
         reward_chest_count += 1
         status_text = "🎁 صندوق مكافأة جديد! +%d عملة" % last_hunt_reward
@@ -686,8 +684,7 @@ func _open_reward_chest():
         return
     reward_chest_count -= 1
     var chest_reward = rng.randi_range(80, 220) + mission_level * 15
-    dog_coins += chest_reward
-    total_coins_earned += chest_reward
+    _credit_coins(chest_reward, "صندوق مكافأة")
     status_text = "🎁 فتحت الصندوق وحصلت على +%d عملة" % chest_reward
     _save_dog_profiles()
     queue_redraw()
@@ -729,8 +726,7 @@ func _claim_activity_mission(index: int):
         status_text = "المهمة اليومية لم تكتمل بعد"
         return
     daily_missions_claimed[index] = true
-    dog_coins += rewards[index]
-    total_coins_earned += rewards[index]
+    _credit_coins(rewards[index], "مهمة يومية")
     status_text = "🎯 مكافأة المهمة اليومية: +%d عملة" % rewards[index]
     _save_dog_profiles()
 
@@ -744,8 +740,7 @@ func _claim_weekly_mission():
         return
     weekly_mission_claimed = true
     var reward = 900 + mission_level * 50
-    dog_coins += reward
-    total_coins_earned += reward
+    _credit_coins(reward, "مهمة أسبوعية")
     status_text = "🏆 مكافأة الأسبوع: +%d عملة" % reward
     _save_dog_profiles()
 
