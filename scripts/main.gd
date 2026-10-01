@@ -1325,77 +1325,77 @@ func _unhandled_input(event):
 
     # Hunting location selectors: governorate, area, village.
     if p.x >= 520 and p.x <= 700 and p.y >= 805 and p.y <= 900:
-    dog_variant += 1
-    if dog_variant > dog_variant_names.size():
-        dog_variant = 1
-    status_text = "تم اختيار %s" % dog_variant_names[dog_variant - 1]
-    queue_redraw()
-    return
-
-if kennel_shop_open:
-    if p.x >= 20 and p.x <= 700 and p.y >= 335 and p.y < 760:
-        var shop_index = int((p.y - 335) / 95.0)
-        if shop_index >= 0 and shop_index < shop_items.size():
-            _buy_shop_item(shop_index)
-        return
-    if p.y >= 760:
-        kennel_shop_open = false
+        dog_variant += 1
+        if dog_variant > dog_variant_names.size():
+            dog_variant = 1
+        status_text = "تم اختيار %s" % dog_variant_names[dog_variant - 1]
         queue_redraw()
-    return
-
-if kennel_open:
-    if p.x >= 20 and p.x <= 700 and p.y >= 320 and p.y < 770:
-        var idx = int((p.y - 320) / 82.0)
-        if idx >= 0 and idx < 5:
-            _buy_or_select_dog(idx)
         return
-    if p.y >= 770:
-        kennel_open = false
+
+    if kennel_shop_open:
+        if p.x >= 20 and p.x <= 700 and p.y >= 335 and p.y < 760:
+            var shop_index = int((p.y - 335) / 95.0)
+            if shop_index >= 0 and shop_index < shop_items.size():
+                _buy_shop_item(shop_index)
+            return
+        if p.y >= 760:
+            kennel_shop_open = false
+            queue_redraw()
+        return
+
+    if kennel_open:
+        if p.x >= 20 and p.x <= 700 and p.y >= 320 and p.y < 770:
+            var idx = int((p.y - 320) / 82.0)
+            if idx >= 0 and idx < 5:
+                _buy_or_select_dog(idx)
+            return
+        if p.y >= 770:
+            kennel_open = false
+            queue_redraw()
+        return
+
+    if p.y >= 920 and p.y < 980:
+        _open_shop()
+        return
+    if p.y >= 980 and p.y < 1040:
+        _open_kennel()
+        return
+    if p.y >= 1040 and p.y < 1090:
+        _claim_daily_reward()
+        return
+    if p.y >= 1090 and p.y < 1140:
+        _open_reward_chest()
+        return
+    if p.y >= 1140 and p.y < 1190:
+        _claim_activity_mission(0 if p.x < 240 else (1 if p.x < 480 else 2))
+        return
+    if p.y >= 1190 and p.y < 1240:
+        _claim_weekly_mission()
+        return
+
+    if p.y >= 805 and p.y < 850 and p.x < 250:
+        _inspect_track()
+        return
+    if p.y >= 805 and p.y < 850 and p.x < 500:
+        _start_dog_search()
+        return
+    if p.y >= 850 and p.y < 910 and p.x < 500:
+        dog_upgrade_open = not dog_upgrade_open
         queue_redraw()
-    return
+        return
+    if dog_upgrade_open and p.y >= 910:
+        var col = int(p.x / 180.0)
+        if col == 0:
+            _upgrade_dog("scent")
+        elif col == 1:
+            _upgrade_dog("speed")
+        elif col == 2:
+            _upgrade_dog("accuracy")
+        else:
+            _upgrade_dog("stamina")
+        return
 
-if p.y >= 920 and p.y < 980:
-    _open_shop()
-    return
-if p.y >= 980 and p.y < 1040:
-    _open_kennel()
-    return
-if p.y >= 1040 and p.y < 1090:
-    _claim_daily_reward()
-    return
-if p.y >= 1090 and p.y < 1140:
-    _open_reward_chest()
-    return
-if p.y >= 1140 and p.y < 1190:
-    _claim_activity_mission(0 if p.x < 240 else (1 if p.x < 480 else 2))
-    return
-if p.y >= 1190 and p.y < 1240:
-    _claim_weekly_mission()
-    return
-
-if p.y >= 805 and p.y < 850 and p.x < 250:
-    _inspect_track()
-    return
-if p.y >= 805 and p.y < 850 and p.x < 500:
-    _start_dog_search()
-    return
-if p.y >= 850 and p.y < 910 and p.x < 500:
-    dog_upgrade_open = not dog_upgrade_open
-    queue_redraw()
-    return
-if dog_upgrade_open and p.y >= 910:
-    var col = int(p.x / 180.0)
-    if col == 0:
-        _upgrade_dog("scent")
-    elif col == 1:
-        _upgrade_dog("speed")
-    elif col == 2:
-        _upgrade_dog("accuracy")
-    else:
-        _upgrade_dog("stamina")
-    return
-
-if p.y >= 610 and p.y < 638:
+    if p.y >= 610 and p.y < 638:
         _open_location_menu(0)
         return
     if p.y >= 638 and p.y < 665:
