@@ -666,8 +666,8 @@ func _hunt_coin_reward() -> int:
     var condition_bonus := maxi(0, 8 - roundi((_world_difficulty() - 1.0) * 8.0))
     return maxi(5, roundi((base + streak_bonus + accuracy_bonus + condition_bonus) * hunting_mode_multiplier))
 
-func _grant_hunt_reward()
-        _update_activity_missions():
+func _grant_hunt_reward():
+    _update_activity_missions()
     last_hunt_reward = _hunt_coin_reward()
     _credit_coins(last_hunt_reward, "مكافأة صيد")
     if streak > 0 and streak % 5 == 0:
