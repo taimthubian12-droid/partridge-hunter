@@ -1013,17 +1013,6 @@ func _set_dog_state(searching: bool, found: bool):
     dog_has_found_prey = found
     queue_redraw()
 
-func _start_dog_search():
-    dog_searching = true
-    dog_has_found_prey = false
-    if connected:
-        if multiplayer.is_server():
-            _set_dog_state.rpc(true, false)
-        else:
-            _request_dog_search.rpc_id(1)
-    # The local gameplay loop represents the dog finding and returning the prey.
-    get_tree().create_timer(1.5).timeout.connect(_dog_found_prey)
-
 func _dog_found_prey():
     if not dog_searching:
         return
