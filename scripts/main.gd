@@ -111,7 +111,6 @@ var hunter_xp := 0
 var hunter_xp_next := 100
 var total_hunts := 0
 var total_hits := 0
-var best_streak := 0
 var hunter_rank := "مبتدئ"
 var hunter_profile_open := false
 var finance_open := false
