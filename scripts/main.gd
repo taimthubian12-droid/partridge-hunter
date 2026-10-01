@@ -1231,7 +1231,10 @@ func _unhandled_input(event):
             start_menu_open = false
             queue_redraw()
             return
-        if p.x >= 475 and p.y >= 465 and p.y < 520:\n            _open_finance()\n            return\n        if p.y >= 640 and p.y < 715:
+        if p.x >= 475 and p.y >= 465 and p.y < 520:
+            _open_finance()
+            return
+        if p.y >= 640 and p.y < 715:
             _set_hunting_mode(0)
             return
         if p.y >= 730 and p.y < 805:
